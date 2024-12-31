@@ -27,6 +27,8 @@ public class AppDbContext : DbContext
             .HasMany(j => j.Tags)
             .WithMany(t => t.Jokes)
             .UsingEntity(j => j.ToTable(ProjectHelper.JokeTagsTableName));
+        
+        
         //
         // // Configure relationships
         // modelBuilder.Entity<JokeTag>()

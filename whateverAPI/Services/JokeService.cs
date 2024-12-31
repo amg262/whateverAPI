@@ -57,6 +57,7 @@ public class JokeService : IJokeService
                     {
                         // Tag doesn't exist, add it to the database
                         _db.Tags.Add(tag);
+                        joke.Tags.Add(tag);
                     }
                     else
                     {

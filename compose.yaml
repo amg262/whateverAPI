@@ -4,14 +4,16 @@
 #      config:
 #        - subnet: 10.10.0.0/16
 services:
-#  whateverapi:
-#    image: whateverapi
-#    build:
-#      context: .
-#      dockerfile: whateverAPI/Dockerfile
-#    ports:
-#      - "5000:8080"
-#      - "5001:8081"
+  whateverapi:
+    image: whateverapi
+    build:
+      context: .
+      dockerfile: whateverAPI/Dockerfile
+    ports:
+      - "5000:8080"
+      - "5001:8081"
+    depends_on:
+      - sqlserver
   
   sqlserver:
     image: mcr.microsoft.com/mssql/server:latest

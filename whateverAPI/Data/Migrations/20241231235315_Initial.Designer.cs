@@ -12,7 +12,7 @@ using whateverAPI.Data;
 namespace whateverAPI.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20241230205417_Initial")]
+    [Migration("20241231235315_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -40,7 +40,7 @@ namespace whateverAPI.Data.Migrations
                     b.ToTable("JokeTags", (string)null);
                 });
 
-            modelBuilder.Entity("whateverAPI.Models.Joke", b =>
+            modelBuilder.Entity("whateverAPI.Entities.Joke", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -63,7 +63,7 @@ namespace whateverAPI.Data.Migrations
                     b.ToTable("Jokes");
                 });
 
-            modelBuilder.Entity("whateverAPI.Models.Tag", b =>
+            modelBuilder.Entity("whateverAPI.Entities.Tag", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -79,13 +79,13 @@ namespace whateverAPI.Data.Migrations
 
             modelBuilder.Entity("JokeTag", b =>
                 {
-                    b.HasOne("whateverAPI.Models.Joke", null)
+                    b.HasOne("whateverAPI.Entities.Joke", null)
                         .WithMany()
                         .HasForeignKey("JokesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("whateverAPI.Models.Tag", null)
+                    b.HasOne("whateverAPI.Entities.Tag", null)
                         .WithMany()
                         .HasForeignKey("TagsId")
                         .OnDelete(DeleteBehavior.Cascade)
