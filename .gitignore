@@ -1,0 +1,16 @@
+bin/
+obj/
+/packages/
+riderModule.iml
+/_ReSharper.Caches/
+.idea/
+
+whateverAPI.sln.DotSettings.user
+
+.vs/
+
+.gitconfig
+
+appsettings.Production.json
+
+whateverAPI/whateverAPI.csproj.user

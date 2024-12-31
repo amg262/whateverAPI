@@ -1,0 +1,69 @@
+﻿#networks:
+#  custom:
+#    ipam:
+#      config:
+#        - subnet: 10.10.0.0/16
+services:
+#  whateverapi:
+#    image: whateverapi
+#    build:
+#      context: .
+#      dockerfile: whateverAPI/Dockerfile
+#    ports:
+#      - "5000:8080"
+#      - "5001:8081"
+  
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:latest
+    container_name: sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=yourStrongPassword123!
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+#    networks:
+#      custom:
+#    ports:
+#      - "5000:5000"
+#      - "5001:5001"
+#  postgres:
+#    image: postgres
+#    environment:
+#      - POSTGRES_PASSWORD=postgrespw
+#      - POSTGRES_USER=postgres
+#      - POSTGRES_DB=DataBridge
+#      - IncludeErrorDetail=true
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - postgres_data:/var/lib/postresql/data
+##    networks:
+#      custom:
+#  mssql:
+#    container_name: mssql-db
+#    hostname: mssql-db
+#    image: mcr.microsoft.com/mssql/server:2022-latest
+#    environment:
+#      ACCEPT_EULA: 'Y'
+#      MSSQL_SA_PASSWORD: 'Admin123!'
+#      MSSQL_DATA_DIR: /var/opt/mssql/data
+#      MSSQL_PID: 'Developer'
+#      MSSQL_TCP_PORT: 1433
+#    ports:
+#      - "1433:1433"
+#    volumes:
+#      - mssql_data:/var/lib/mssql/data
+#      - /var/lib/mssql/log
+#      - /var/lib/mssql/secrets
+#    networks:
+#      custom:
+volumes:
+  sqlserver-data:
+    driver: local
+#  postgres_data:
+#    driver: local
+#  mssql_data:
+#    driver: local
