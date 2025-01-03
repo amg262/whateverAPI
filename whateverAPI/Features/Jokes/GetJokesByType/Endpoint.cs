@@ -3,7 +3,7 @@ using whateverAPI.Services;
 
 namespace whateverAPI.Features.Jokes.GetJokesByType;
 
-public class Endpoint : Endpoint<Request, List<Response>, Mapper>
+public class Endpoint : Endpoint<Request, List<JokeResponse>, Mapper>
 {
     private readonly IJokeService _jokeService;
     
@@ -20,7 +20,7 @@ public class Endpoint : Endpoint<Request, List<Response>, Mapper>
         {
             s.Summary = "Get jokes by type";
             s.Description = "Retrieves all jokes of a specific type with optional pagination and sorting";
-            s.Response<List<Response>>(200, "Jokes retrieved successfully");
+            s.Response<List<JokeResponse>>(200, "Jokes retrieved successfully");
             s.Response(400, "Invalid request parameters");
             s.Response(404, "No jokes found for the specified type");
         });
@@ -36,13 +36,13 @@ public class Endpoint : Endpoint<Request, List<Response>, Mapper>
             req.SortBy,
             req.SortDescending ?? false);
 
-        if (!jokes.Any())
+        if (jokes.Count == 0)
         {
             await SendNotFoundAsync(ct);
             return;
         }
         
-        var response = jokes.Select(j => Mapper.FromEntity(j)).ToList();
+        var response = jokes.Select(j => Map.FromEntity(j)).ToList();
         await SendOkAsync(response, ct);
     }
 }

@@ -8,7 +8,7 @@ public class Tag : IEntity<Guid>
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
-    public Guid Id { get; set; } = Guid.CreateVersion7();
+    public Guid Id { get; set; } 
 
     public required string Name { get; set; } = string.Empty;
 

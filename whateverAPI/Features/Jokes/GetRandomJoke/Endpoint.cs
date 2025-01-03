@@ -3,7 +3,7 @@ using whateverAPI.Services;
 
 namespace whateverAPI.Features.Jokes.GetRandomJoke;
 
-public class Endpoint : EndpointWithoutRequest<Response, Mapper>
+public class Endpoint : EndpointWithoutRequest<JokeResponse, Mapper>
 {
     private readonly IJokeService _jokeService;
 
@@ -20,7 +20,7 @@ public class Endpoint : EndpointWithoutRequest<Response, Mapper>
         {
             s.Summary = "Get a random joke";
             s.Description = "Retrieves a random joke from the collection";
-            s.Response<Response>(200, "Random joke retrieved successfully");
+            s.Response<JokeResponse>(200, "Random joke retrieved successfully");
             s.Response(404, "No jokes available");
         });
         Options(o => o.WithTags("Jokes"));
@@ -35,7 +35,7 @@ public class Endpoint : EndpointWithoutRequest<Response, Mapper>
             return;
         }
 
-        var response = Mapper.FromEntity(joke);
+        var response = Map.FromEntity(joke);
         await SendOkAsync(response, ct);
     }
 }

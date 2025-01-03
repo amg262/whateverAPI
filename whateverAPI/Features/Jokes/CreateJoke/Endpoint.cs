@@ -4,7 +4,7 @@ using whateverAPI.Services;
 
 namespace whateverAPI.Features.Jokes.CreateJoke;
 
-public class Endpoint: Endpoint<Request, Response, Mapper>
+public class Endpoint: Endpoint<Request, JokeResponse, Mapper>
 {
     private readonly IJokeService _jokeService;
     
@@ -16,12 +16,11 @@ public class Endpoint: Endpoint<Request, Response, Mapper>
     public override void Configure()
     {
         Post("/jokes/create");
-        AllowAnonymous();
         Summary(s =>
         {
             s.Summary = "Create a new joke";
             s.Description = "Creates a new joke entry with content, type, and optional tags";
-            s.Response<Response>(201, "Joke created successfully");
+            s.Response<JokeResponse>(201, "Joke created successfully");
             s.Response(400, "Invalid request");
         });
     }
@@ -30,7 +29,7 @@ public class Endpoint: Endpoint<Request, Response, Mapper>
     {
         var jokeEntity = Map.ToEntity(req);
         var joke = await _jokeService.CreateJoke(jokeEntity);
-        Response response = Map.FromEntity(joke);
+        JokeResponse response = Map.FromEntity(joke);
 
         
         await SendCreatedAtAsync<GetJoke.Endpoint>(

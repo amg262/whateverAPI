@@ -1,7 +1,26 @@
 ﻿using FastEndpoints;
 using FluentValidation;
+using whateverAPI.Entities;
 
 namespace whateverAPI.Features.Jokes.GetJoke;
+
+public record Request
+{
+    public Guid Id { get; init; }
+}
+
+public class Mapper : Mapper<Request, JokeResponse, Joke>
+{
+    public override JokeResponse FromEntity(Joke e) => new()
+    {
+        Id = e.Id,
+        Content = e.Content,
+        Type = e.Type,
+        Tags = e.Tags?.Select(t => t.Name).ToList() ?? [],
+        CreatedAt = e.CreatedAt,
+        LaughScore = e.LaughScore
+    };
+}
 
 public class Validator : Validator<Request>
 {

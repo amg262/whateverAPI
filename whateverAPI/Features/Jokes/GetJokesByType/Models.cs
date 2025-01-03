@@ -1,8 +1,30 @@
 ﻿using FastEndpoints;
 using FluentValidation;
-using whateverAPI.Features.Jokes.GetRandomJoke;
+using whateverAPI.Entities;
 
 namespace whateverAPI.Features.Jokes.GetJokesByType;
+
+public record Request
+{
+    public JokeType Type { get; init; }
+    public int? PageSize { get; init; }
+    public int? PageNumber { get; init; }
+    public string? SortBy { get; init; }
+    public bool? SortDescending { get; init; }
+}
+
+public class Mapper : Mapper<Request, JokeResponse, Joke>
+{
+    public override JokeResponse FromEntity(Joke e) => new()
+    {
+        Id = e.Id,
+        Content = e.Content,
+        Type = e.Type,
+        Tags = e.Tags?.Select(t => t.Name).ToList(),
+        CreatedAt = e.CreatedAt,
+        LaughScore = e.LaughScore
+    };
+}
 
 public class Validator : Validator<Request>
 {

@@ -14,6 +14,8 @@ public interface IJokeService
     // Read operations
     Task<Joke?> GetRandomJoke();
 
+    Task<List<Joke>?> SearchJokes(string query);
+
     Task<List<Joke>> GetJokesByType(
         JokeType type,
         int? pageSize = null,
@@ -26,6 +28,12 @@ public interface IJokeService
     Task<int> GetJokesCountByType(JokeType type);
 
     Task<Joke?> GetJokeById(Guid id);
+
+    Task<bool> DeleteJoke(Guid id);
+
+    Task<List<Joke>?> GetJokes();
+
+    Task<Joke?> UpdateJoke(Joke? joke);
 }
 
 public class JokeService : IJokeService
@@ -61,7 +69,6 @@ public class JokeService : IJokeService
                     }
                     else
                     {
-                        // Use the existing tag
                         joke.Tags.Add(existingTag);
                     }
                 }
@@ -124,9 +131,7 @@ public class JokeService : IJokeService
     {
         try
         {
-            var query = _db.Jokes
-                .Include(j => j.Tags)
-                .Where(j => j.Type == type);
+            var query = _db.Jokes.Include(j => j.Tags).Where(j => j.Type == type);
 
             // Apply sorting if specified
             if (!string.IsNullOrEmpty(sortBy))
@@ -159,14 +164,96 @@ public class JokeService : IJokeService
         }
     }
 
-    public async Task<bool> JokeExistsById(Guid id)
+    public async Task<bool> JokeExistsById(Guid id) => await _db.Jokes.AnyAsync(j => j.Id == id);
+
+    public async Task<int> GetJokesCountByType(JokeType type) => await _db.Jokes.CountAsync(j => j.Type == type);
+
+    public async Task<bool> DeleteJoke(Guid id)
     {
-        return await _db.Jokes.AnyAsync(j => j.Id == id);
+        try
+        {
+            var joke = await _db.Jokes.FirstOrDefaultAsync(j => j.Id == id);
+
+            if (joke == null)
+            {
+                _logger.LogInformation("Joke with ID {JokeId} not found", id);
+                return false;
+            }
+
+            _db.Jokes.Remove(joke);
+            await _db.SaveChangesAsync();
+            _logger.LogInformation("Deleted joke with ID: {JokeId}", id);
+
+            return true;
+        }
+
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 
-    public async Task<int> GetJokesCountByType(JokeType type)
+    public async Task<List<Joke>?> GetJokes()
     {
-        return await _db.Jokes.CountAsync(j => j.Type == type);
+        try
+        {
+            _logger.LogInformation("Retrieving all jokes");
+            return await _db.Jokes.Include(j => j.Tags).ToListAsync();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
+    public async Task<Joke?> UpdateJoke(Joke? joke)
+    {
+        try
+        {
+            var existingJoke = await _db.Jokes
+                .Include(j => j.Tags)
+                .FirstOrDefaultAsync(j => j.Id == joke.Id);
+
+            if (existingJoke == null) return null;
+
+            // Update basic properties
+            existingJoke.Content = joke.Content ?? existingJoke.Content;
+            existingJoke.Type = joke.Type ?? existingJoke.Type;
+            existingJoke.LaughScore = joke.LaughScore ?? existingJoke.LaughScore;
+
+ 
+            // Handle tags if provided
+            if (joke.Tags?.Count > 0)
+            {
+                existingJoke.Tags.Clear();
+                foreach (var tag in joke.Tags)
+                {
+                    var existingTag = await _db.Tags
+                        .FirstOrDefaultAsync(t => t.Name == tag.Name);
+
+                    if (existingTag == null)
+                    {
+                        tag.Id = Guid.CreateVersion7();
+                        _db.Tags.Add(tag);
+                        existingJoke.Tags.Add(tag);
+                    }
+                    else
+                    {
+                        existingJoke.Tags.Add(existingTag);
+                    }
+                }
+            }
+
+            await _db.SaveChangesAsync();
+            return existingJoke;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating joke with ID: {JokeId}", joke.Id);
+            throw;
+        }
     }
 
     public async Task<Joke?> GetJokeById(Guid id)
@@ -189,6 +276,31 @@ public class JokeService : IJokeService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving joke with ID: {JokeId}", id);
+            throw;
+        }
+    }
+
+    public async Task<List<Joke>?> SearchJokes(string query)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(query)) return [];
+
+            query = query.Trim().ToLower();
+
+            // This query will work because it lets the database handle the case-insensitive comparison
+            var searchResults = await _db.Jokes
+                .Include(j => j.Tags)
+                .Where(joke => joke.Content.Contains(query) || joke.Tags.Any(t => t.Name.Contains(query)))
+                .ToListAsync();
+
+            _logger.LogInformation("Search for '{Query}' returned {Count} results", query, searchResults.Count);
+
+            return searchResults;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
             throw;
         }
     }

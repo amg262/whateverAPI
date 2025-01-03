@@ -44,6 +44,9 @@ builder.Services.AddOpenApi();
 builder.Services.AddFastEndpoints();
 builder.Services.SwaggerDocument();
 
+builder.Services.AddAuthenticationJwtBearer(s=>s.SigningKey = "supersecretsupersecretsupersecretsupersecretsupersecretsupersecret");
+builder.Services.AddAuthorization();
+
 builder.Services.AddScoped<IJokeService, JokeService>();
 builder.Services.AddScoped<ITagService, TagService>();
 // builder.Services.AddScoped<IBaseRepository<Joke, Guid>, JokeRepository>();
@@ -58,27 +61,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseDefaultExceptionHandler();
 app.UseFastEndpoints(c => { c.Endpoints.RoutePrefix = "api"; });
 app.UseSwaggerGen();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+app.UseAuthentication();
+app.UseAuthorization();
 
-    try
-    {
-        logger.LogInformation("Applying database migrations...");
-
-        await db.Database.MigrateAsync();
-        logger.LogInformation("Database migrations applied successfully");
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "An error occurred while applying database migrations");
-        throw;
-    }
-}
+await DbInitializer.InitDb(app);
 
 
 app.Run();
