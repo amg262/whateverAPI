@@ -4,33 +4,35 @@ using whateverAPI.Entities;
 using whateverAPI.Helpers;
 using whateverAPI.Services;
 
-namespace whateverAPI.Features.Jokes.UpdateJoke;
+namespace whateverAPI.Features.Jokes;
 
-public class UpdateJokeRequest
-{
-    public Guid Id { get; init; }
-    public string? Content { get; init; }
-    public JokeType? Type { get; init; }
-    public List<string>? Tags { get; init; } = [];
-    public int? LaughScore { get; init; }
-}
 
-public class Validator : Validator<UpdateJokeRequest>
-{
-    public Validator()
-    {
-        RuleFor(x => x.Id).NotEmpty().WithMessage("Id is required.");
-        RuleFor(x => x.Content).NotEmpty().WithMessage("Content is required.");
-    }
-}
 
-public class UpdateJoke : Endpoint<UpdateJokeRequest, JokeResponse>
+public class UpdateJoke : Endpoint<UpdateJoke.Request, JokeResponse>
 {
     private readonly IJokeService _jokeService;
 
     public UpdateJoke(IJokeService jokeService)
     {
         _jokeService = jokeService;
+    }
+    
+    public class Request
+    {
+        public Guid Id { get; init; }
+        public string? Content { get; init; }
+        public JokeType? Type { get; init; }
+        public List<string>? Tags { get; init; } = [];
+        public int? LaughScore { get; init; }
+    }
+
+    public class Validator : Validator<Request>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.Id).NotEmpty().WithMessage("Id is required.");
+            RuleFor(x => x.Content).NotEmpty().WithMessage("Content is required.");
+        }
     }
 
     public override void Configure()
@@ -47,7 +49,7 @@ public class UpdateJoke : Endpoint<UpdateJokeRequest, JokeResponse>
         });
     }
 
-    public override async Task HandleAsync(UpdateJokeRequest req, CancellationToken ct)
+    public override async Task HandleAsync(Request req, CancellationToken ct)
     {
         var joke = EntityMapper.UpdateRequestToJoke(req);
         var updatedJoke = await _jokeService.UpdateJoke(joke);

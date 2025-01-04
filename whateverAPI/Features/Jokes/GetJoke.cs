@@ -5,23 +5,23 @@ using whateverAPI.Services;
 
 namespace whateverAPI.Features.Jokes.GetJoke;
 
-public record Request
-{
-    public Guid Id { get; init; }
-}
-
-public class Validator : Validator<Request>
-{
-    public Validator() => RuleFor(x => x.Id).NotEmpty().WithMessage("Joke ID is required");
-}
-
-public class GetJoke : Endpoint<Request, JokeResponse>
+public class GetJoke : Endpoint<GetJoke.Request, JokeResponse>
 {
     private readonly IJokeService _jokeService;
 
     public GetJoke(IJokeService jokeService)
     {
         _jokeService = jokeService;
+    }
+    
+    public record Request
+    {
+        public Guid Id { get; init; }
+    }
+
+    public class Validator : Validator<Request>
+    {
+        public Validator() => RuleFor(x => x.Id).NotEmpty().WithMessage("Joke ID is required");
     }
 
     public override void Configure()

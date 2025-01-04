@@ -3,24 +3,25 @@ using FluentValidation;
 using whateverAPI.Helpers;
 using whateverAPI.Services;
 
-namespace whateverAPI.Features.Jokes.SearchJokes;
+namespace whateverAPI.Features.Jokes;
 
-public record Request
-{
-    public required string Query { get; init; }
-}
-
-public class Validator : Validator<Request>
-{
-    public Validator() => RuleFor(x => x.Query).NotEmpty().WithMessage("Query is required.");
-}
-public class SearchJokes : Endpoint<Request, List<JokeResponse>>
+public class SearchJokes : Endpoint<SearchJokes.Request, List<JokeResponse>>
 {
     private readonly IJokeService _jokeService;
 
     public SearchJokes(IJokeService jokeService)
     {
         _jokeService = jokeService;
+    }
+
+    public record Request
+    {
+        public required string Query { get; init; }
+    }
+
+    public class Validator : Validator<Request>
+    {
+        public Validator() => RuleFor(x => x.Query).NotEmpty().WithMessage("Query is required.");
     }
 
     public override void Configure()

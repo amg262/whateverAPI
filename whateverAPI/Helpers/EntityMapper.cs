@@ -1,8 +1,5 @@
 ﻿using whateverAPI.Entities;
 using whateverAPI.Features.Jokes;
-using whateverAPI.Features.Jokes.CreateJoke;
-using whateverAPI.Features.Jokes.Endpoints;
-using whateverAPI.Features.Jokes.UpdateJoke;
 
 namespace whateverAPI.Helpers;
 
@@ -44,7 +41,7 @@ public static class EntityMapper
         LaughScore = joke.LaughScore
     }).ToList();
 
-    public static Joke CreateRequestToJoke(CreateJokeRequest createJokeRequest) => new()
+    public static Joke CreateRequestToJoke(CreateJoke.Request createJokeRequest) => new()
     {
         Id = Guid.CreateVersion7(),
         Content = createJokeRequest.Content,
@@ -54,7 +51,7 @@ public static class EntityMapper
         LaughScore = createJokeRequest.LaughScore
     };
 
-    public static Joke UpdateRequestToJoke(UpdateJokeRequest request) => new()
+    public static Joke UpdateRequestToJoke(UpdateJoke.Request request) => new()
     {
         Id = request.Id,
         Content = request.Content,

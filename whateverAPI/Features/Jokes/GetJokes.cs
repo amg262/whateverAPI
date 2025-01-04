@@ -2,7 +2,7 @@
 using whateverAPI.Helpers;
 using whateverAPI.Services;
 
-namespace whateverAPI.Features.Jokes.GetJokes;
+namespace whateverAPI.Features.Jokes;
 
 public class GetJokes : EndpointWithoutRequest<List<JokeResponse>>
 {
