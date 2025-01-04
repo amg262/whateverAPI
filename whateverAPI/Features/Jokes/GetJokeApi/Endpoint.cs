@@ -1,10 +1,11 @@
 ﻿using FastEndpoints;
 using whateverAPI.Entities;
+using whateverAPI.Helpers;
 using whateverAPI.Services;
 
 namespace whateverAPI.Features.Jokes.GetJokeApi;
 
-public class Endpoint : EndpointWithoutRequest<JokeResponse, Mapper>
+public class Endpoint : EndpointWithoutRequest<JokeResponse>
 {
     private readonly JokeApiService _jokeApiService;
 
@@ -30,12 +31,13 @@ public class Endpoint : EndpointWithoutRequest<JokeResponse, Mapper>
     public override async Task HandleAsync(CancellationToken ct)
     {
         var joke = await _jokeApiService.GetExternalJoke();
-        var response = Map.FromEntity(joke);
+        
         if (joke == null)
         {
             await SendNotFoundAsync(ct);
             return;
         }
+        var response = EntityMapper.JokeToJokeResponse(joke);
 
         await SendCreatedAtAsync<GetJoke.Endpoint>(new { joke.Id }, response, cancellation: ct);
     }

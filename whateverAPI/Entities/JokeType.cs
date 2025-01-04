@@ -2,6 +2,7 @@
 
 public enum JokeType
 {
+    Default = 0,
     // Jokes authored by you
     Personal = 1,
 

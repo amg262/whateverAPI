@@ -1,9 +1,10 @@
 ﻿using FastEndpoints;
+using whateverAPI.Helpers;
 using whateverAPI.Services;
 
 namespace whateverAPI.Features.Jokes.GetJoke;
 
-public class Endpoint : Endpoint<Request, JokeResponse, Mapper>
+public class Endpoint : Endpoint<Request, JokeResponse>
 {
     private readonly IJokeService _jokeService;
     
@@ -38,7 +39,7 @@ public class Endpoint : Endpoint<Request, JokeResponse, Mapper>
             return;
         }
         
-        var response = Map.FromEntity(joke);
+        var response = EntityMapper.JokeToJokeResponse(joke);
         await SendOkAsync(response, ct);
     }
 }

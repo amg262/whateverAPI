@@ -1,4 +1,5 @@
 ﻿using FastEndpoints;
+using whateverAPI.Helpers;
 using whateverAPI.Services;
 
 namespace whateverAPI.Features.Jokes.UpdateJoke;
@@ -28,8 +29,7 @@ public class Endpoint : Endpoint<Request, JokeResponse, Mapper>
 
     public override async Task HandleAsync(Request req, CancellationToken ct)
     {
-        var joke = Map.ToEntity(req);
-
+        var joke = EntityMapper.RequestToJoke(req);
         var updatedJoke = await _jokeService.UpdateJoke(joke);
 
         if (updatedJoke == null)
@@ -38,7 +38,7 @@ public class Endpoint : Endpoint<Request, JokeResponse, Mapper>
             return;
         }
 
-        var response = Map.FromEntity(updatedJoke);
+        var response = EntityMapper.JokeToJokeResponse(joke);
         await SendOkAsync(response, ct);
     }
 }
