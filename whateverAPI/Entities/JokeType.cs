@@ -20,8 +20,8 @@ public enum JokeType
 
     // Miscellaneous or unknown sources
     Unknown = 6,
-    Joke,
-    FunnySaying,
-    Discouragement,
-    SelfDeprecating
+    Joke = 7,
+    FunnySaying = 8,
+    Discouragement = 9,
+    SelfDeprecating = 10
 }

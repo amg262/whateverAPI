@@ -1,15 +1,14 @@
 ﻿using FastEndpoints;
-using whateverAPI.Entities;
 using whateverAPI.Helpers;
 using whateverAPI.Services;
 
-namespace whateverAPI.Features.Jokes.GetJokeApi;
+namespace whateverAPI.Features.Jokes.Endpoints;
 
-public class Endpoint : EndpointWithoutRequest<JokeResponse>
+public class GetJokeApi : EndpointWithoutRequest<JokeResponse>
 {
     private readonly JokeApiService _jokeApiService;
 
-    public Endpoint(JokeApiService jokeApiService)
+    public GetJokeApi(JokeApiService jokeApiService)
     {
         _jokeApiService = jokeApiService;
     }
@@ -39,6 +38,6 @@ public class Endpoint : EndpointWithoutRequest<JokeResponse>
         }
         var response = EntityMapper.JokeToJokeResponse(joke);
 
-        await SendCreatedAtAsync<GetJoke.Endpoint>(new { joke.Id }, response, cancellation: ct);
+        await SendCreatedAtAsync<GetJoke.GetJoke>(new { joke.Id }, response, cancellation: ct);
     }
 }

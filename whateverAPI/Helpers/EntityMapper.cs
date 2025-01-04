@@ -1,5 +1,7 @@
 ﻿using whateverAPI.Entities;
 using whateverAPI.Features.Jokes;
+using whateverAPI.Features.Jokes.CreateJoke;
+using whateverAPI.Features.Jokes.Endpoints;
 using whateverAPI.Features.Jokes.UpdateJoke;
 
 namespace whateverAPI.Helpers;
@@ -17,7 +19,7 @@ public static class EntityMapper
                 : $"{response.Setup}\n{response.Delivery}",
             Type = JokeType.ThirdParty,
             CreatedAt = DateTime.UtcNow,
-            Tags = [new Tag { Id = Guid.CreateVersion7(), Name = response.Category }],
+            Tags = [new Tag { Id = Guid.CreateVersion7(), Name = response.Category.ToLower() }],
             LaughScore = 0
         };
     }
@@ -42,12 +44,22 @@ public static class EntityMapper
         LaughScore = joke.LaughScore
     }).ToList();
 
-    public static Joke RequestToJoke(Request request) => new()
+    public static Joke CreateRequestToJoke(CreateJokeRequest createJokeRequest) => new()
+    {
+        Id = Guid.CreateVersion7(),
+        Content = createJokeRequest.Content,
+        Type = createJokeRequest.Type,
+        Tags = createJokeRequest.Tags?.Select(tagName => new Tag { Id = Guid.CreateVersion7(), Name = tagName.ToLower() })
+            .ToList() ?? [],
+        LaughScore = createJokeRequest.LaughScore
+    };
+
+    public static Joke UpdateRequestToJoke(UpdateJokeRequest request) => new()
     {
         Id = request.Id,
         Content = request.Content,
         Type = request.Type,
-        Tags = request.Tags?.Select(t => new Tag { Name = t }).ToList() ?? [],
+        Tags = request.Tags?.Select(tagName => new Tag { Id = Guid.CreateVersion7(), Name = tagName.ToLower() }).ToList() ?? [],
         LaughScore = request.LaughScore
     };
 }

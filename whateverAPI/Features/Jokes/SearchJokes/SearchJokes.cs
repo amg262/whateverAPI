@@ -1,14 +1,24 @@
 ﻿using FastEndpoints;
+using FluentValidation;
 using whateverAPI.Helpers;
 using whateverAPI.Services;
 
 namespace whateverAPI.Features.Jokes.SearchJokes;
 
-public class Endpoint : Endpoint<Request, List<JokeResponse>, Mapper>
+public record Request
+{
+    public required string Query { get; init; }
+}
+
+public class Validator : Validator<Request>
+{
+    public Validator() => RuleFor(x => x.Query).NotEmpty().WithMessage("Query is required.");
+}
+public class SearchJokes : Endpoint<Request, List<JokeResponse>>
 {
     private readonly IJokeService _jokeService;
 
-    public Endpoint(IJokeService jokeService)
+    public SearchJokes(IJokeService jokeService)
     {
         _jokeService = jokeService;
     }

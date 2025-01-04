@@ -1,13 +1,31 @@
 ﻿using FastEndpoints;
+using FluentValidation;
 using whateverAPI.Services;
 
 namespace whateverAPI.Features.Jokes.DeleteJoke;
 
-public class Endpoint : Endpoint<Request>
+public record Request
+{
+    public Guid Id { get; init; }
+}
+
+public class Validator : Validator<Request>
+{
+    public Validator()
+    {
+        RuleFor(r => r.Id)
+            .NotEmpty()
+            .WithMessage("The ID cannot be empty.")
+            .Must(id => id != Guid.Empty)
+            .WithMessage("The ID must be a valid GUID.");
+    }
+}
+
+public class DeleteJoke : Endpoint<Request>
 {
     private readonly IJokeService _jokeService;
 
-    public Endpoint(IJokeService jokeService)
+    public DeleteJoke(IJokeService jokeService)
     {
         _jokeService = jokeService;
     }

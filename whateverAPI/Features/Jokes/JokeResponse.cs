@@ -3,7 +3,7 @@ using whateverAPI.Entities;
 
 namespace whateverAPI.Features.Jokes;
 
-public record JokeResponse : IResponseMapper
+public record JokeResponse
 {
     public Guid Id { get; init; }
     public string? Content { get; init; }

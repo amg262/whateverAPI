@@ -3,6 +3,11 @@ using whateverAPI.Services;
 
 namespace whateverAPI.Features.User.Logout;
 
+public class Response
+{
+    public string Message { get; set; }
+}
+
 public class Endpoint : EndpointWithoutRequest<Response>
 {
     private readonly JwtTokenService _jwtTokenService;

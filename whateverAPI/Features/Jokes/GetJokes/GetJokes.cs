@@ -1,15 +1,14 @@
 ﻿using FastEndpoints;
-using whateverAPI.Features.Jokes.SearchJokes;
 using whateverAPI.Helpers;
 using whateverAPI.Services;
 
 namespace whateverAPI.Features.Jokes.GetJokes;
 
-public class Endpoint : EndpointWithoutRequest<List<JokeResponse>, Mapper>
+public class GetJokes : EndpointWithoutRequest<List<JokeResponse>>
 {
     private readonly IJokeService _jokeService;
 
-    public Endpoint(IJokeService jokeService)
+    public GetJokes(IJokeService jokeService)
     {
         _jokeService = jokeService;
     }

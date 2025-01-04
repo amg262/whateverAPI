@@ -22,15 +22,16 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(
-            builder.Configuration.GetConnectionString("DefaultConnection"),
-            sqlOptions => sqlOptions.EnableRetryOnFailure())
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+            o => o.EnableRetryOnFailure())
         .EnableDetailedErrors()
         .EnableSensitiveDataLogging());
-// options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
-//         o => o.EnableRetryOnFailure())
-//     .EnableDetailedErrors()
-//     .EnableSensitiveDataLogging());
+    // options.UseSqlServer(
+    //         builder.Configuration.GetConnectionString("DefaultConnection"),
+    //         sqlOptions => sqlOptions.EnableRetryOnFailure())
+    //     .EnableDetailedErrors()
+    //     .EnableSensitiveDataLogging());
+
 
 // builder.Services.AddAuthenticationJwtBearer(s => s.SigningKey = "supersecret");
 // builder.Services.AddAuthorization();
@@ -49,7 +50,6 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("JwtOpti
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<JokeApiService>();
 builder.Services.AddScoped<IJokeService, JokeService>();
-builder.Services.AddScoped<ITagService, TagService>();
 
 
 builder.Services.AddHttpClient<JokeApiService>(client =>

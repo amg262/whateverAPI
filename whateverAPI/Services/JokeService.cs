@@ -59,6 +59,7 @@ public class JokeService : IJokeService
 
                 foreach (var tag in newTags)
                 {
+                    // tag.Name = tag.Name.ToLower();
                     var existingTag = await _db.Tags.FirstOrDefaultAsync(t => t.Name == tag.Name);
 
                     if (existingTag == null)

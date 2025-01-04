@@ -1,14 +1,34 @@
 ﻿using FastEndpoints;
+using FluentValidation;
+using whateverAPI.Entities;
 using whateverAPI.Helpers;
 using whateverAPI.Services;
 
 namespace whateverAPI.Features.Jokes.UpdateJoke;
 
-public class Endpoint : Endpoint<Request, JokeResponse, Mapper>
+public class UpdateJokeRequest
+{
+    public Guid Id { get; init; }
+    public string? Content { get; init; }
+    public JokeType? Type { get; init; }
+    public List<string>? Tags { get; init; } = [];
+    public int? LaughScore { get; init; }
+}
+
+public class Validator : Validator<UpdateJokeRequest>
+{
+    public Validator()
+    {
+        RuleFor(x => x.Id).NotEmpty().WithMessage("Id is required.");
+        RuleFor(x => x.Content).NotEmpty().WithMessage("Content is required.");
+    }
+}
+
+public class UpdateJoke : Endpoint<UpdateJokeRequest, JokeResponse>
 {
     private readonly IJokeService _jokeService;
 
-    public Endpoint(IJokeService jokeService)
+    public UpdateJoke(IJokeService jokeService)
     {
         _jokeService = jokeService;
     }
@@ -27,9 +47,9 @@ public class Endpoint : Endpoint<Request, JokeResponse, Mapper>
         });
     }
 
-    public override async Task HandleAsync(Request req, CancellationToken ct)
+    public override async Task HandleAsync(UpdateJokeRequest req, CancellationToken ct)
     {
-        var joke = EntityMapper.RequestToJoke(req);
+        var joke = EntityMapper.UpdateRequestToJoke(req);
         var updatedJoke = await _jokeService.UpdateJoke(joke);
 
         if (updatedJoke == null)

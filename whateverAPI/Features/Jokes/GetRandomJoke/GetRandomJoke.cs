@@ -1,6 +1,8 @@
 ﻿using FastEndpoints;
 using FluentValidation;
 using whateverAPI.Entities;
+using whateverAPI.Helpers;
+using whateverAPI.Services;
 
 namespace whateverAPI.Features.Jokes.GetRandomJoke;
 
@@ -11,19 +13,6 @@ public record Request
     public int? PageNumber { get; init; }
     public string? SortBy { get; init; }
     public bool? SortDescending { get; init; }
-}
-
-public class Mapper : Mapper<EndpointWithoutRequest, JokeResponse, Joke>, IResponseMapper
-{
-    public override JokeResponse FromEntity(Joke e) => new()
-    {
-        Id = e.Id,
-        Content = e.Content,
-        Type = e.Type,
-        Tags = e.Tags?.Select(t => t.Name).ToList() ?? [],
-        CreatedAt = e.CreatedAt,
-        LaughScore = e.LaughScore
-    };
 }
 
 public class Validator : Validator<Request>
@@ -65,5 +54,42 @@ public class Validator : Validator<Request>
                 .NotNull()
                 .WithMessage("Sort direction is required when using sorting");
         });
+    }
+}
+
+public class GetRandomJoke : EndpointWithoutRequest<JokeResponse>
+{
+    private readonly IJokeService _jokeService;
+
+    public GetRandomJoke(IJokeService jokeService)
+    {
+        _jokeService = jokeService;
+    }
+
+    public override void Configure()
+    {
+        Get("/jokes/random");
+        AllowAnonymous();
+        Summary(s =>
+        {
+            s.Summary = "Get a random joke";
+            s.Description = "Retrieves a random joke from the collection";
+            s.Response<JokeResponse>(200, "Random joke retrieved successfully");
+            s.Response(404, "No jokes available");
+        });
+        // Options(o => o.WithTags("Jokes"));
+    }
+
+    public override async Task HandleAsync(CancellationToken ct)
+    {
+        var joke = await _jokeService.GetRandomJoke();
+        if (joke == null)
+        {
+            await SendNotFoundAsync(ct);
+            return;
+        }
+
+        var response = EntityMapper.JokeToJokeResponse(joke);
+        await SendOkAsync(response, ct);
     }
 }
