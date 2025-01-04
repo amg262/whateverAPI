@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Text;
 using FastEndpoints;
 using FastEndpoints.Security;
@@ -46,8 +47,20 @@ if (builder.Environment.IsDevelopment())
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("JwtOptions"));
 builder.Services.AddScoped<JwtTokenService>();
+builder.Services.AddScoped<JokeApiService>();
 builder.Services.AddScoped<IJokeService, JokeService>();
 builder.Services.AddScoped<ITagService, TagService>();
+
+
+builder.Services.AddHttpClient<JokeApiService>(client =>
+{
+    client.DefaultRequestHeaders.Clear();
+    client.BaseAddress = new Uri(builder.Configuration["JokeApiOptions:BaseUrl"] ?? string.Empty);
+    // client.DefaultRequestHeaders.Add("username", builder.Configuration["DelivraOptions:Username"]);
+    // client.DefaultRequestHeaders.Add("password", builder.Configuration["DelivraOptions:Password"]);
+    // client.DefaultRequestHeaders.Add("listname", builder.Configuration["DelivraOptions:Listname"]);
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+}).AddStandardResilienceHandler();
 
 
 // Add services to the container.
