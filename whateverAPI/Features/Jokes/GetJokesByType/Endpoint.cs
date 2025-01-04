@@ -24,7 +24,7 @@ public class Endpoint : Endpoint<Request, List<JokeResponse>, Mapper>
             s.Response(400, "Invalid request parameters");
             s.Response(404, "No jokes found for the specified type");
         });
-        Options(o => o.WithTags("Jokes"));
+        // Options(o => o.WithTags("Jokes"));
     }
     
     public override async Task HandleAsync(Request req, CancellationToken ct)

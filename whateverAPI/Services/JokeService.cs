@@ -199,7 +199,7 @@ public class JokeService : IJokeService
         try
         {
             _logger.LogInformation("Retrieving all jokes");
-            return await _db.Jokes.Include(j => j.Tags).ToListAsync();
+            return await _db.Jokes.Include(j => j.Tags).AsNoTracking().ToListAsync();
         }
         catch (Exception e)
         {
@@ -219,15 +219,15 @@ public class JokeService : IJokeService
             if (existingJoke == null) return null;
 
             // Update basic properties
-            existingJoke.Content = joke.Content ?? existingJoke.Content;
-            existingJoke.Type = joke.Type ?? existingJoke.Type;
-            existingJoke.LaughScore = joke.LaughScore ?? existingJoke.LaughScore;
+            existingJoke.Content = joke?.Content ?? existingJoke.Content;
+            existingJoke.Type = joke?.Type ?? existingJoke.Type;
+            existingJoke.LaughScore = joke?.LaughScore ?? existingJoke.LaughScore;
 
- 
+
             // Handle tags if provided
-            if (joke.Tags?.Count > 0)
+            if (joke?.Tags?.Count > 0)
             {
-                existingJoke.Tags.Clear();
+                existingJoke.Tags?.Clear();
                 foreach (var tag in joke.Tags)
                 {
                     var existingTag = await _db.Tags
@@ -237,11 +237,11 @@ public class JokeService : IJokeService
                     {
                         tag.Id = Guid.CreateVersion7();
                         _db.Tags.Add(tag);
-                        existingJoke.Tags.Add(tag);
+                        existingJoke.Tags?.Add(tag);
                     }
                     else
                     {
-                        existingJoke.Tags.Add(existingTag);
+                        existingJoke.Tags?.Add(existingTag);
                     }
                 }
             }

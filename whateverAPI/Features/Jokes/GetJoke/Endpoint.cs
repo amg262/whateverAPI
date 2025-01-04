@@ -24,7 +24,7 @@ public class Endpoint : Endpoint<Request, JokeResponse, Mapper>
             s.Response(400, "Invalid joke ID format");
             s.Response(404, "Joke not found");
         });
-        Options(o => o.WithTags("Jokes"));
+        // Options(o => o.WithTags("Jokes"));
     }
     
     public override async Task HandleAsync(Request req, CancellationToken ct)

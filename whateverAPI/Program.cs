@@ -1,9 +1,16 @@
+using System.Text;
 using FastEndpoints;
 using FastEndpoints.Security;
 using FastEndpoints.Swagger;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Primitives;
+using Microsoft.IdentityModel.Tokens;
 using whateverAPI.Data;
 using whateverAPI.Entities;
+using whateverAPI.Helpers;
+using whateverAPI.Options;
 using whateverAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,18 +44,56 @@ if (builder.Environment.IsDevelopment())
     });
 }
 
+builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("JwtOptions"));
+builder.Services.AddScoped<JwtTokenService>();
+builder.Services.AddScoped<IJokeService, JokeService>();
+builder.Services.AddScoped<ITagService, TagService>();
+
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddOpenApi();
 builder.Services.AddFastEndpoints();
-builder.Services.SwaggerDocument();
-
-builder.Services.AddAuthenticationJwtBearer(s=>s.SigningKey = "supersecretsupersecretsupersecretsupersecretsupersecretsupersecret");
+builder.Services.SwaggerDocument(o =>
+{
+    o.DocumentSettings = s =>
+    {
+        s.DocumentName = "v1";
+        s.Title = "whateverAPI";
+        s.Version = "v1";
+    };
+});
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["JwtOptions:Issuer"],
+            ValidAudience = builder.Configuration["JwtOptions:Audience"],
+            IssuerSigningKey =
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtOptions:Secret"] ?? string.Empty))
+        };
+        // This fires before the request is processed to add the Authorization header to the request
+        // or to get the token from the request and add it to the Authorization header if it's set by Swagger UI
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var jwtTokenService = context.HttpContext.RequestServices.GetRequiredService<JwtTokenService>();
+                var token = jwtTokenService.GetToken(context);
+                return Task.CompletedTask;
+            }
+        };
+    });
 builder.Services.AddAuthorization();
 
-builder.Services.AddScoped<IJokeService, JokeService>();
-builder.Services.AddScoped<ITagService, TagService>();
+
 // builder.Services.AddScoped<IBaseRepository<Joke, Guid>, JokeRepository>();
 
 

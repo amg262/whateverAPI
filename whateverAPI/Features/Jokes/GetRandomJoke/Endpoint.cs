@@ -23,7 +23,7 @@ public class Endpoint : EndpointWithoutRequest<JokeResponse, Mapper>
             s.Response<JokeResponse>(200, "Random joke retrieved successfully");
             s.Response(404, "No jokes available");
         });
-        Options(o => o.WithTags("Jokes"));
+        // Options(o => o.WithTags("Jokes"));
     }
 
     public override async Task HandleAsync(CancellationToken ct)
