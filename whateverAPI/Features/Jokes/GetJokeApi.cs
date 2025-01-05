@@ -38,6 +38,6 @@ public class GetJokeApi : EndpointWithoutRequest<JokeResponse>
         }
         var response = EntityMapper.JokeToJokeResponse(joke);
 
-        await SendCreatedAtAsync<GetJoke.GetJoke>(new { joke.Id }, response, cancellation: ct);
+        await SendCreatedAtAsync<GetJoke>(new { joke.Id }, response, cancellation: ct);
     }
 }

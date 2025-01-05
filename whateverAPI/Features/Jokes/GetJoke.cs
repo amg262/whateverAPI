@@ -3,7 +3,7 @@ using FluentValidation;
 using whateverAPI.Helpers;
 using whateverAPI.Services;
 
-namespace whateverAPI.Features.Jokes.GetJoke;
+namespace whateverAPI.Features.Jokes;
 
 public class GetJoke : Endpoint<GetJoke.Request, JokeResponse>
 {

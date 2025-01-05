@@ -15,7 +15,7 @@ public class GetRandomJoke : EndpointWithoutRequest<JokeResponse>
         _jokeService = jokeService;
     }
 
-    public record Request
+    public record Request : IFilterRequest
     {
         public JokeType Type { get; init; }
         public int? PageSize { get; init; }

@@ -65,7 +65,7 @@ public class CreateJoke : Endpoint<CreateJoke.Request, JokeResponse>
         var joke = await _jokeService.CreateJoke(jokeEntity);
         var response = EntityMapper.JokeToJokeResponse(joke);
 
-        await SendCreatedAtAsync<GetJoke.GetJoke>(
+        await SendCreatedAtAsync<GetJoke>(
             new { id = joke.Id },
             response,
             cancellation: ct

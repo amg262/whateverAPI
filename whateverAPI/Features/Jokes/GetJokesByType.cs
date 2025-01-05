@@ -16,7 +16,7 @@ public class GetJokesByType : Endpoint<GetJokesByType.Request, List<JokeResponse
     }
 
 
-    public record Request
+    public record Request : IFilterRequest
     {
         public JokeType Type { get; init; }
         public int? PageSize { get; init; }
