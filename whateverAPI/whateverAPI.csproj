@@ -33,9 +33,4 @@
       </Content>
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Features\User\Login\" />
-      <Folder Include="Features\User\Logout\" />
-    </ItemGroup>
-
 </Project>

@@ -26,7 +26,7 @@ public class UserLogout : EndpointWithoutRequest<UserLogout.LogoutResponse>
 
     public record LogoutResponse
     {
-        public string Message { get; set; }
+        public string Message { get; init; }
     }
 
     public override async Task HandleAsync(CancellationToken ct)

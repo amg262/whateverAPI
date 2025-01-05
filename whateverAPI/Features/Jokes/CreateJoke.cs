@@ -49,7 +49,7 @@ public class CreateJoke : Endpoint<CreateJoke.Request, JokeResponse>
     public override void Configure()
     {
         Post("/jokes/create");
-        AllowAnonymous();
+        // AllowAnonymous();
         Summary(s =>
         {
             s.Summary = "Create a new joke";

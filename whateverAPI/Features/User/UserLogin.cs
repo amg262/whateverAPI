@@ -19,14 +19,18 @@ public class UserLogin : Endpoint<UserLogin.Request>
     {
         Post("/user/login");
         AllowAnonymous();
+        Summary(s =>
+        {
+            s.Summary = "Login";
+            s.Description = "Login the user";
+            s.Response(200, "User logged in successfully");
+        });
     }
 
-    public class Request
+    public record Request
     {
-        public string? Name { get; set; }
-
-        public string? Username { get; set; }
-        // public string? Password { get; set; }
+        public string? Name { get; init; }
+        public string? Username { get; init; }
     }
 
     public class Validator : Validator<Request>
