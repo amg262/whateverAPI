@@ -1,18 +1,13 @@
 ﻿using FastEndpoints;
 using whateverAPI.Services;
 
-namespace whateverAPI.Features.User.Logout;
+namespace whateverAPI.Features.User;
 
-public class Response
-{
-    public string Message { get; set; }
-}
-
-public class Endpoint : EndpointWithoutRequest<Response>
+public class UserLogout : EndpointWithoutRequest<UserLogout.LogoutResponse>
 {
     private readonly JwtTokenService _jwtTokenService;
 
-    public Endpoint(JwtTokenService jwtTokenService)
+    public UserLogout(JwtTokenService jwtTokenService)
     {
         _jwtTokenService = jwtTokenService;
     }
@@ -25,8 +20,13 @@ public class Endpoint : EndpointWithoutRequest<Response>
         {
             s.Summary = "Logout";
             s.Description = "Logout the user";
-            s.Response<Response>(200, "User logged out successfully");
+            s.Response<LogoutResponse>(200, "User logged out successfully");
         });
+    }
+
+    public record LogoutResponse
+    {
+        public string Message { get; set; }
     }
 
     public override async Task HandleAsync(CancellationToken ct)
@@ -40,6 +40,6 @@ public class Endpoint : EndpointWithoutRequest<Response>
         }
 
         _jwtTokenService.InvalidateToken(token);
-        await SendAsync(new Response { Message = "User logged out successfully" }, cancellation: ct);
+        await SendAsync(new LogoutResponse { Message = "User logged out successfully" }, cancellation: ct);
     }
 }
