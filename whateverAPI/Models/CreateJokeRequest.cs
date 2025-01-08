@@ -49,3 +49,20 @@ public record UpdateJokeRequest
         }
     }
 }
+
+public record DeleteJokeRequest
+{
+    public Guid Id { get; init; }
+
+    public class Validator : AbstractValidator<DeleteJokeRequest>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.Id)
+                .NotEmpty()
+                .WithMessage("The ID cannot be empty.");
+            // .Must(id => id != Guid.Empty)
+            // .WithMessage("The ID must be a valid GUID.");
+        }
+    }
+}

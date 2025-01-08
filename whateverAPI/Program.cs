@@ -15,6 +15,7 @@ using whateverAPI.Models;
 using whateverAPI.Options;
 using whateverAPI.Services;
 using Microsoft.AspNetCore.Mvc;
+using whateverAPI.Features.User;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -46,7 +47,7 @@ if (builder.Environment.IsDevelopment())
     builder.WebHost.ConfigureKestrel(options =>
     {
         // Bind to localhost instead of any IP
-        options.ListenLocalhost(8080); // HTTP
+        // options.ListenLocalhost(8080); // HTTP
         options.ListenLocalhost(8081, configure => configure.UseHttps()); // HTTPS
     });
 
@@ -141,6 +142,15 @@ app.MapControllers();
 // Endpoints
 var api = app.MapGroup("/api");
 var jokes = api.MapGroup("/jokes").WithTags("Jokes");
+var user = api.MapGroup("/user").WithTags("User");
+
+api.MapDelete("/delete/{Id}", async Task<IResult> (Guid id, IJokeService jokeService) =>
+    {
+        await jokeService.DeleteJoke(id);
+        return TypedResults.Ok();
+    }).WithName("DeleteToken")
+    .WithDescription("Delete the token")
+    .WithOpenApi();
 
 jokes.MapGet("/", async Task<IResult> (IJokeService jokeService) =>
     {
@@ -170,11 +180,10 @@ jokes.MapPost("/", async Task<IResult> (CreateJokeRequest request, IJokeService 
         var joke = EntityMapper.CreateRequestToJoke(request);
         var created = await jokeService.CreateJoke(joke);
         var response = EntityMapper.JokeToJokeResponse(created);
-        
+
         return response is null
             ? TypedResults.BadRequest()
             : TypedResults.Created($"/api/jokes/{created.Id}", response);
-        
     })
     .WithName("CreateJoke")
     .WithDescription("Create a new joke")
@@ -182,17 +191,47 @@ jokes.MapPost("/", async Task<IResult> (CreateJokeRequest request, IJokeService 
     .AddEndpointFilter<ValidationFilter<CreateJokeRequest>>();
 
 jokes.MapPut("/{id:guid}", async Task<IResult> ([FromRoute] Guid id, UpdateJokeRequest request, IJokeService jokeService) =>
-{
-    var joke = EntityMapper.UpdateRequestToJoke(id, request);
-    // joke.Id = id;
-    var updated = await jokeService.UpdateJoke(joke);
+    {
+        var joke = EntityMapper.UpdateRequestToJoke(id, request);
+        // joke.Id = id;
+        var updated = await jokeService.UpdateJoke(joke);
 
-    return updated is null
-        ? TypedResults.NotFound()
-        : TypedResults.Ok(EntityMapper.JokeToJokeResponse(updated));
-}).WithName("UpdateJoke")
+        return updated is null
+            ? TypedResults.NotFound()
+            : TypedResults.Ok(EntityMapper.JokeToJokeResponse(updated));
+    }).WithName("UpdateJoke")
     .WithDescription("Update a joke by ID")
     .WithOpenApi()
     .AddEndpointFilter<ValidationFilter<UpdateJokeRequest>>();
+
+
+jokes.MapDelete("/{id}", async Task<IResult> (Guid id, IJokeService jokeService) =>
+    {
+        var result = await jokeService.DeleteJoke(id);
+        return result
+            ? TypedResults.NoContent()
+            : TypedResults.NotFound();
+    }).WithName("DeleteJoke")
+    .WithDescription("Delete a joke by ID")
+    .AddEndpointFilter<ValidationFilter<DeleteJokeRequest>>()
+    .WithOpenApi();
+
+user.MapPost("/login", async Task<IResult> (UserLogin.Request request, JwtTokenService jwtTokenService) =>
+    {
+        var jwtToken = jwtTokenService.GenerateToken(request.Name, request.Username);
+        return TypedResults.Ok(new { request.Username, Token = jwtToken });
+    }).WithName("UserLogin")
+    .WithDescription("Login")
+    .WithOpenApi()
+    .AddEndpointFilter<ValidationFilter<UserLogin.Request>>();
+
+user.MapPost("/logout", async Task<IResult> (JwtTokenService jwtTokenService) =>
+    {
+        var token = jwtTokenService.GetToken();
+        jwtTokenService.InvalidateToken(token);
+        return TypedResults.Ok();
+    }).WithName("UserLogout")
+    .WithDescription("Logout")
+    .WithOpenApi();
 
 app.Run();
