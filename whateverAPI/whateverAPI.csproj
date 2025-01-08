@@ -12,6 +12,7 @@
         <PackageReference Include="FastEndpoints.Security" Version="5.32.0" />
         <PackageReference Include="FastEndpoints.Swagger" Version="5.32.0" />
         <PackageReference Include="FluentValidation" Version="11.11.0" />
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.0" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.0">
@@ -25,6 +26,7 @@
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.0.0" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.2" />
+        <PackageReference Include="Scalar.AspNetCore" Version="1.2.73" />
     </ItemGroup>
 
     <ItemGroup>

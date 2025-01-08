@@ -2,13 +2,14 @@
 using FluentValidation;
 using whateverAPI.Entities;
 using whateverAPI.Helpers;
+using whateverAPI.Models;
 using whateverAPI.Services;
 
 namespace whateverAPI.Features.Jokes;
 
 
 
-public class UpdateJoke : Endpoint<UpdateJoke.Request, JokeResponse>
+public class UpdateJoke : Endpoint<UpdateJokeRequest, JokeResponse>
 {
     private readonly IJokeService _jokeService;
 
@@ -49,18 +50,18 @@ public class UpdateJoke : Endpoint<UpdateJoke.Request, JokeResponse>
         });
     }
 
-    public override async Task HandleAsync(Request req, CancellationToken ct)
+    public override async Task HandleAsync(UpdateJokeRequest req, CancellationToken ct)
     {
-        var joke = EntityMapper.UpdateRequestToJoke(req);
-        var updatedJoke = await _jokeService.UpdateJoke(joke);
-
-        if (updatedJoke == null)
-        {
-            await SendNotFoundAsync(ct);
-            return;
-        }
-
-        var response = EntityMapper.JokeToJokeResponse(joke);
-        await SendOkAsync(response, ct);
+        // var joke = EntityMapper.UpdateRequestToJoke(req);
+        // var updatedJoke = await _jokeService.UpdateJoke(joke);
+        //
+        // if (updatedJoke == null)
+        // {
+        //     await SendNotFoundAsync(ct);
+        //     return;
+        // }
+        //
+        // var response = EntityMapper.JokeToJokeResponse(joke);
+        // await SendOkAsync(response, ct);
     }
 }

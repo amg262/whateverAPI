@@ -2,11 +2,12 @@
 using FluentValidation;
 using whateverAPI.Entities;
 using whateverAPI.Helpers;
+using whateverAPI.Models;
 using whateverAPI.Services;
 
 namespace whateverAPI.Features.Jokes;
 
-public class CreateJoke : Endpoint<CreateJoke.Request, JokeResponse>
+public class CreateJoke : Endpoint<CreateJokeRequest, JokeResponse>
 {
     private readonly IJokeService _jokeService;
 
@@ -59,7 +60,7 @@ public class CreateJoke : Endpoint<CreateJoke.Request, JokeResponse>
         });
     }
 
-    public override async Task HandleAsync(Request req, CancellationToken ct)
+    public override async Task HandleAsync(CreateJokeRequest req, CancellationToken ct)
     {
         var jokeEntity = EntityMapper.CreateRequestToJoke(req);
         var joke = await _jokeService.CreateJoke(jokeEntity);

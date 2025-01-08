@@ -1,27 +1,26 @@
 ﻿using whateverAPI.Entities;
 using whateverAPI.Features.Jokes;
+using whateverAPI.Models;
 
 namespace whateverAPI.Helpers;
 
 public static class EntityMapper
 {
-    public static Joke JokeApiResponseToJoke(JokeApiResponse response)
+    public static Joke JokeApiResponseToJoke(JokeApiResponse response) => new()
     {
-        return new Joke
-        {
-            Id = Guid.CreateVersion7(),
-            Content = response.Type.Equals("single"
-                , StringComparison.CurrentCultureIgnoreCase)
-                ? response.Joke
-                : $"{response.Setup}\n{response.Delivery}",
-            Type = JokeType.ThirdParty,
-            CreatedAt = DateTime.UtcNow,
-            Tags = [new Tag { Id = Guid.CreateVersion7(), Name = response.Category.ToLower() }],
-            LaughScore = 0
-        };
-    }
+        Id = Guid.CreateVersion7(),
+        Content = response.Type.Equals("single"
+            , StringComparison.CurrentCultureIgnoreCase)
+            ? response.Joke
+            : $"{response.Setup}\n{response.Delivery}",
+        Type = JokeType.ThirdParty,
+        CreatedAt = DateTime.UtcNow,
+        Tags = [new Tag { Id = Guid.CreateVersion7(), Name = response.Category.ToLower() }],
+        LaughScore = 0
+    };
 
-    public static JokeResponse JokeToJokeResponse(Joke e) => new()
+
+    public static JokeResponse? JokeToJokeResponse(Joke e) => new()
     {
         Id = e.Id,
         Content = e.Content,
@@ -41,19 +40,18 @@ public static class EntityMapper
         LaughScore = joke.LaughScore
     }).ToList();
 
-    public static Joke CreateRequestToJoke(CreateJoke.Request createJokeRequest) => new()
+    public static Joke CreateRequestToJoke(CreateJokeRequest request) => new()
     {
         Id = Guid.CreateVersion7(),
-        Content = createJokeRequest.Content,
-        Type = createJokeRequest.Type,
-        Tags = createJokeRequest.Tags?.Select(tagName => new Tag { Id = Guid.CreateVersion7(), Name = tagName.ToLower() })
-            .ToList() ?? [],
-        LaughScore = createJokeRequest.LaughScore
+        Content = request.Content,
+        Type = request.Type,
+        Tags = request.Tags?.Select(tagName => new Tag { Id = Guid.CreateVersion7(), Name = tagName.ToLower() }).ToList() ?? [],
+        LaughScore = request.LaughScore
     };
 
-    public static Joke UpdateRequestToJoke(UpdateJoke.Request request) => new()
+    public static Joke UpdateRequestToJoke(Guid id, UpdateJokeRequest request) => new()
     {
-        Id = request.Id,
+        Id = id,
         Content = request.Content,
         Type = request.Type,
         Tags = request.Tags?.Select(tagName => new Tag { Id = Guid.CreateVersion7(), Name = tagName.ToLower() }).ToList() ?? [],
