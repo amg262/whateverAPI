@@ -58,9 +58,9 @@ public record DeleteJokeRequest
     {
         public Validator()
         {
-            RuleFor(x => x.Id)
-                .NotEmpty()
-                .WithMessage("The ID cannot be empty.");
+            // RuleFor(x => x.Id)
+            //     .NotEmpty()
+            //     .WithMessage("The ID cannot be empty.");
             // .Must(id => id != Guid.Empty)
             // .WithMessage("The ID must be a valid GUID.");
         }

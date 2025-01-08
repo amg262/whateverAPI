@@ -213,8 +213,8 @@ jokes.MapDelete("/{id}", async Task<IResult> (Guid id, IJokeService jokeService)
             : TypedResults.NotFound();
     }).WithName("DeleteJoke")
     .WithDescription("Delete a joke by ID")
-    .AddEndpointFilter<ValidationFilter<DeleteJokeRequest>>()
-    .WithOpenApi();
+    .WithOpenApi()
+    .AddEndpointFilter<ValidationFilter<DeleteJokeRequest>>();
 
 user.MapPost("/login", async Task<IResult> (UserLogin.Request request, JwtTokenService jwtTokenService) =>
     {
