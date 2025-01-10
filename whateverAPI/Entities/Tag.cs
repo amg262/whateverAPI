@@ -18,6 +18,8 @@ public class Tag : IEntity<Guid>
 
     public DateTime ModifiedAt { get; set; }
 
+    public bool IsActive { get; set; }
+
     // Navigation property for many-to-many relationship
     // [JsonIgnore] [NotMapped] public List<Joke> Jokes { get; set; } = [];
 
@@ -32,7 +34,8 @@ public class Tag : IEntity<Guid>
         Id = Guid.CreateVersion7(),
         Name = name.ToLower().Trim(),
         CreatedAt = DateTime.UtcNow,
-        ModifiedAt = DateTime.UtcNow
+        ModifiedAt = DateTime.UtcNow,
+        IsActive = true
     };
 
     // Response mapping
@@ -51,7 +54,8 @@ public class Tag : IEntity<Guid>
         Id = Guid.CreateVersion7(),
         Name = request.Name.ToLower().Trim(),
         CreatedAt = DateTime.UtcNow,
-        ModifiedAt = DateTime.UtcNow
+        ModifiedAt = DateTime.UtcNow,
+        IsActive = true
     };
 
 // Create mapping
@@ -60,7 +64,8 @@ public class Tag : IEntity<Guid>
         return new Tag
         {
             Name = request.Name.ToLower().Trim(),
-            ModifiedAt = DateTime.UtcNow
+            ModifiedAt = DateTime.UtcNow,
+            IsActive = request.IsActive
         };
     }
 
@@ -68,5 +73,7 @@ public class Tag : IEntity<Guid>
     public void ApplyUpdate(UpdateTagRequest request)
     {
         Name = request.Name.ToLower().Trim();
+        ModifiedAt = DateTime.UtcNow;
+        IsActive = request.IsActive;
     }
 }

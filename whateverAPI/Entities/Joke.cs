@@ -49,10 +49,11 @@ public class Joke : IEntity<Guid>
             Content = request.Content,
             Type = request.Type,
             Tags = request.Tags?.Select(tagName =>
+                // We don't want to assign any kind of timestamps of GUIDs here because the TagService will handle that
+                // during joke creation
                 new Tag
                 {
-                    // Id = Guid.CreateVersion7(),
-                    Name = tagName.ToLower().Trim()
+                    Name = tagName.ToLower().Trim(),
                 }).ToList() ?? [],
             LaughScore = request.LaughScore,
             IsActive = true
@@ -70,7 +71,8 @@ public class Joke : IEntity<Guid>
             Tags = request.Tags?.Select(tagName =>
                 new Tag
                 {
-                    // Id = Guid.CreateVersion7(),
+                    // We don't want to assign any kind of timestamps of GUIDs here because the TagService will handle that
+                    // during joke updating
                     Name = tagName.ToLower().Trim()
                 }).ToList() ?? [],
             LaughScore = request.LaughScore,

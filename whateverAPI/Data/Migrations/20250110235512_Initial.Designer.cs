@@ -12,7 +12,7 @@ using whateverAPI.Data;
 namespace whateverAPI.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250110233524_Initial")]
+    [Migration("20250110235512_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -76,6 +76,9 @@ namespace whateverAPI.Data.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("ModifiedAt")
                         .HasColumnType("timestamp with time zone");

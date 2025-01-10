@@ -76,22 +76,70 @@ public static class DbInitializer
             return;
         }
 
-        // Create some common tags that can be reused across jokes
-        var programmingTag = new Tag
-            { Id = Guid.CreateVersion7(), Name = "Programming", CreatedAt = DateTime.UtcNow, ModifiedAt = DateTime.UtcNow };
-        var dadJokeTag = new Tag
-            { Id = Guid.CreateVersion7(), Name = "Dad Joke", CreatedAt = DateTime.UtcNow, ModifiedAt = DateTime.UtcNow };
-        var techTag = new Tag
-            { Id = Guid.CreateVersion7(), Name = "Tech", CreatedAt = DateTime.UtcNow, ModifiedAt = DateTime.UtcNow };
-        var punTag = new Tag
-            { Id = Guid.CreateVersion7(), Name = "Pun", CreatedAt = DateTime.UtcNow, ModifiedAt = DateTime.UtcNow };
-        var existentialTag = new Tag
-            { Id = Guid.CreateVersion7(), Name = "Existential", CreatedAt = DateTime.UtcNow, ModifiedAt = DateTime.UtcNow };
-        var darkTag = new Tag
-            { Id = Guid.CreateVersion7(), Name = "Dark", CreatedAt = DateTime.UtcNow, ModifiedAt = DateTime.UtcNow };
-        var societyTag = new Tag
-            { Id = Guid.CreateVersion7(), Name = "Society", CreatedAt = DateTime.UtcNow, ModifiedAt = DateTime.UtcNow };
+        var baseTime = DateTime.UtcNow;
 
+        var programmingTag = new Tag
+        {
+            Id = Guid.CreateVersion7(),
+            Name = "Programming",
+            CreatedAt = baseTime.AddDays(-30),
+            ModifiedAt = baseTime.AddDays(-2),
+            IsActive = true
+        };
+
+        var dadJokeTag = new Tag
+        {
+            Id = Guid.CreateVersion7(),
+            Name = "Dad Joke",
+            CreatedAt = baseTime.AddDays(-25),
+            ModifiedAt = baseTime.AddDays(-1),
+            IsActive = true
+        };
+
+        var techTag = new Tag
+        {
+            Id = Guid.CreateVersion7(),
+            Name = "Tech",
+            CreatedAt = baseTime.AddDays(-20),
+            ModifiedAt = baseTime.AddDays(-3),
+            IsActive = true
+        };
+
+        var punTag = new Tag
+        {
+            Id = Guid.CreateVersion7(),
+            Name = "Pun",
+            CreatedAt = baseTime.AddDays(-15),
+            ModifiedAt = baseTime.AddHours(-12),
+            IsActive = true
+        };
+
+        var existentialTag = new Tag
+        {
+            Id = Guid.CreateVersion7(),
+            Name = "Existential",
+            CreatedAt = baseTime.AddDays(-10),
+            ModifiedAt = baseTime.AddHours(-6),
+            IsActive = true
+        };
+
+        var darkTag = new Tag
+        {
+            Id = Guid.CreateVersion7(),
+            Name = "Dark",
+            CreatedAt = baseTime.AddDays(-5),
+            ModifiedAt = baseTime.AddHours(-2),
+            IsActive = true
+        };
+
+        var societyTag = new Tag
+        {
+            Id = Guid.CreateVersion7(),
+            Name = "Society",
+            CreatedAt = baseTime,
+            ModifiedAt = baseTime,
+            IsActive = true
+        };
         var jokes = new List<Joke>
         {
             // Programming Jokes

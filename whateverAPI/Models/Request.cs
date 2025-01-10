@@ -28,6 +28,8 @@ public record CreateTagRequest
 public record UpdateTagRequest
 {
     public required string Name { get; init; }
+    
+    public bool IsActive { get; set; }
 
     public class Validator : AbstractValidator<UpdateTagRequest>
     {
