@@ -42,15 +42,15 @@ namespace whateverAPI.Data.Migrations
                 name: "JokeTags",
                 columns: table => new
                 {
-                    JokesId = table.Column<Guid>(type: "uuid", nullable: false),
+                    JokeId = table.Column<Guid>(type: "uuid", nullable: false),
                     TagsId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_JokeTags", x => new { x.JokesId, x.TagsId });
+                    table.PrimaryKey("PK_JokeTags", x => new { x.JokeId, x.TagsId });
                     table.ForeignKey(
-                        name: "FK_JokeTags_Jokes_JokesId",
-                        column: x => x.JokesId,
+                        name: "FK_JokeTags_Jokes_JokeId",
+                        column: x => x.JokeId,
                         principalTable: "Jokes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);

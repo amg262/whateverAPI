@@ -167,10 +167,10 @@ jokeGroup.MapPut("/{id:guid}", async Task<IResult> ([FromRoute] Guid id, UpdateJ
     .WithOpenApi()
     .AddEndpointFilter<ValidationFilter<UpdateJokeRequest>>();
 
-jokeGroup.MapDelete("/{id:guid}", async Task<IResult> ([AsParameters] DeleteJokeRequest request, IJokeService jokeService,
+jokeGroup.MapDelete("/{id:guid}", async Task<IResult> ([FromRoute] Guid id, IJokeService jokeService,
         CancellationToken ct) =>
     {
-        var result = await jokeService.DeleteJoke(request.Id, ct);
+        var result = await jokeService.DeleteJoke(id, ct);
         return result ? TypedResults.NoContent() : TypedResults.NotFound();
     })
     .WithName("DeleteJoke")

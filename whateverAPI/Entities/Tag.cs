@@ -14,5 +14,5 @@ public class Tag : IEntity<Guid>
     public required string Name { get; set; } = string.Empty;
 
     // Navigation property for many-to-many relationship
-    [JsonIgnore] public List<Joke> Jokes { get; set; } = [];
+    // [JsonIgnore] [NotMapped] public List<Joke> Jokes { get; set; } = [];
 }

@@ -12,7 +12,7 @@ using whateverAPI.Data;
 namespace whateverAPI.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250109175236_Initial")]
+    [Migration("20250110012253_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -27,13 +27,13 @@ namespace whateverAPI.Data.Migrations
 
             modelBuilder.Entity("JokeTag", b =>
                 {
-                    b.Property<Guid>("JokesId")
+                    b.Property<Guid>("JokeId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("TagsId")
                         .HasColumnType("uuid");
 
-                    b.HasKey("JokesId", "TagsId");
+                    b.HasKey("JokeId", "TagsId");
 
                     b.HasIndex("TagsId");
 
@@ -81,7 +81,7 @@ namespace whateverAPI.Data.Migrations
                 {
                     b.HasOne("whateverAPI.Entities.Joke", null)
                         .WithMany()
-                        .HasForeignKey("JokesId")
+                        .HasForeignKey("JokeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

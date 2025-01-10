@@ -24,13 +24,13 @@ namespace whateverAPI.Data.Migrations
 
             modelBuilder.Entity("JokeTag", b =>
                 {
-                    b.Property<Guid>("JokesId")
+                    b.Property<Guid>("JokeId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("TagsId")
                         .HasColumnType("uuid");
 
-                    b.HasKey("JokesId", "TagsId");
+                    b.HasKey("JokeId", "TagsId");
 
                     b.HasIndex("TagsId");
 
@@ -78,7 +78,7 @@ namespace whateverAPI.Data.Migrations
                 {
                     b.HasOne("whateverAPI.Entities.Joke", null)
                         .WithMany()
-                        .HasForeignKey("JokesId")
+                        .HasForeignKey("JokeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
