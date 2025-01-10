@@ -12,7 +12,7 @@ using whateverAPI.Data;
 namespace whateverAPI.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250104195520_Initial")]
+    [Migration("20250109175236_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -46,6 +46,7 @@ namespace whateverAPI.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Content")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")

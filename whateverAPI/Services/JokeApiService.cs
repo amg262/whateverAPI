@@ -1,8 +1,7 @@
-﻿using System.Text.Json;
-using whateverAPI.Data;
+﻿using whateverAPI.Data;
 using whateverAPI.Entities;
-using whateverAPI.Features.Jokes;
 using whateverAPI.Helpers;
+using whateverAPI.Models;
 
 namespace whateverAPI.Services;
 
@@ -19,11 +18,11 @@ public class JokeApiService
         _db = db;
     }
 
-    public async Task<Joke?> GetExternalJoke(bool includeNsfw = true)
+    public async Task<Joke?> GetExternalJoke(CancellationToken ct = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync($"joke/dark");
+            var response = await _httpClient.GetAsync($"joke/dark", ct);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -31,7 +30,7 @@ public class JokeApiService
                 return null;
             }
 
-            var jokeResponse = await response.Content.ReadFromJsonAsync<JokeApiResponse>();
+            var jokeResponse = await response.Content.ReadFromJsonAsync<JokeApiResponse>(ct);
             // var jokeResponse = JsonSerializer.Deserialize<JokeApiResponse>(content);
 
             if (jokeResponse == null || jokeResponse.Error) return null;
@@ -39,14 +38,18 @@ public class JokeApiService
             var joke = EntityMapper.JokeApiResponseToJoke(jokeResponse);
 
             _db.Jokes.Add(joke);
-            await _db.SaveChangesAsync();
-            // Convert external joke format to your internal Joke model
+            await _db.SaveChangesAsync(ct);
             return joke;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Fetching joke from external API was cancelled");
+            throw;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching joke from external API");
-            return null;
+            throw;
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using whateverAPI.Entities;
-using whateverAPI.Features.Jokes;
 using whateverAPI.Models;
 
 namespace whateverAPI.Helpers;
@@ -43,6 +42,7 @@ public static class EntityMapper
     public static Joke CreateRequestToJoke(CreateJokeRequest request) => new()
     {
         Id = Guid.CreateVersion7(),
+        CreatedAt = DateTime.UtcNow,
         Content = request.Content,
         Type = request.Type,
         Tags = request.Tags?.Select(tagName => new Tag { Id = Guid.CreateVersion7(), Name = tagName.ToLower() }).ToList() ?? [],
@@ -52,6 +52,14 @@ public static class EntityMapper
     public static Joke UpdateRequestToJoke(Guid id, UpdateJokeRequest request) => new()
     {
         Id = id,
+        Content = request.Content,
+        Type = request.Type,
+        Tags = request.Tags?.Select(tagName => new Tag { Id = Guid.CreateVersion7(), Name = tagName.ToLower() }).ToList() ?? [],
+        LaughScore = request.LaughScore
+    };
+
+    public static Joke UpdateRequestToJoke(UpdateJokeRequest request) => new()
+    {
         Content = request.Content,
         Type = request.Type,
         Tags = request.Tags?.Select(tagName => new Tag { Id = Guid.CreateVersion7(), Name = tagName.ToLower() }).ToList() ?? [],

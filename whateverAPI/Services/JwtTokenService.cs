@@ -139,7 +139,6 @@ public class JwtTokenService : IJwtTokenService
             Issuer = _options.Issuer,
             Audience = _options.Audience,
             Expires = DateTime.MaxValue, // This token never expires
-            // Expires = DateTime.Now.AddDays(_options.ExpirationInDays),
             SigningCredentials = creds,
             Subject = new ClaimsIdentity(claims),
             IssuedAt = DateTime.UtcNow
@@ -147,10 +146,7 @@ public class JwtTokenService : IJwtTokenService
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
 
-        if (saveCookie)
-        {
-            SaveTokenCookie(tokenHandler.WriteToken(token));
-        }
+        if (saveCookie) SaveTokenCookie(tokenHandler.WriteToken(token));
 
         return tokenHandler.WriteToken(token);
     }
