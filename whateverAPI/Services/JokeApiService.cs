@@ -35,7 +35,8 @@ public class JokeApiService
 
             if (jokeResponse == null || jokeResponse.Error) return null;
 
-            var joke = EntityMapper.JokeApiResponseToJoke(jokeResponse);
+            // var joke = Mapper.JokeApiResponseToJoke(jokeResponse);
+            var joke = Joke.FromJokeApiResponse(jokeResponse);
 
             _db.Jokes.Add(joke);
             await _db.SaveChangesAsync(ct);

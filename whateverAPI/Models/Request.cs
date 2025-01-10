@@ -8,6 +8,40 @@ public class Request
 {
 }
 
+public record CreateTagRequest
+{
+    public required string Name { get; init; }
+
+    public class Validator : AbstractValidator<CreateTagRequest>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.Name)
+                .NotEmpty().WithMessage("Tag name is required")
+                .MinimumLength(2).WithMessage("Tag name must be at least 2 characters")
+                .MaximumLength(50).WithMessage("Tag name cannot exceed 50 characters")
+                .Matches("^[a-zA-Z0-9-_]+$").WithMessage("Tag name can only contain letters, numbers, hyphens and underscores");
+        }
+    }
+}
+
+public record UpdateTagRequest
+{
+    public required string Name { get; init; }
+
+    public class Validator : AbstractValidator<UpdateTagRequest>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.Name)
+                .NotEmpty().WithMessage("Tag name is required")
+                .MinimumLength(2).WithMessage("Tag name must be at least 2 characters")
+                .MaximumLength(50).WithMessage("Tag name cannot exceed 50 characters")
+                .Matches("^[a-zA-Z0-9-_]+$").WithMessage("Tag name can only contain letters, numbers, hyphens and underscores");
+        }
+    }
+}
+
 public record CreateJokeRequest
 {
     public required string Content { get; init; }
@@ -74,7 +108,8 @@ public record DeleteJokeRequest
 
 public record FilterRequest
 {
-    public JokeType Type { get; init; }
+    public JokeType? Type { get; init; }
+    public string? Query { get; init; }
     public int? PageSize { get; init; }
     public int? PageNumber { get; init; }
     public string? SortBy { get; init; }
@@ -109,12 +144,12 @@ public record FilterRequest
             When(x => !string.IsNullOrEmpty(x.SortBy), () =>
             {
                 RuleFor(x => x.SortBy)
-                    .Must(sortBy => new[] { "createdAt", "laughScore", "content" }.Contains(sortBy?.ToLower()))
+                    .Must(sortBy => new[] { "createdAt", "modifiedAt", "laughScore", "content", "tag" }.Contains(sortBy?.ToLower()))
                     .WithMessage("Sort by field must be one of: createdAt, laughScore, content");
 
-                RuleFor(x => x.SortDescending)
-                    .NotNull()
-                    .WithMessage("Sort direction is required when using sorting");
+                // RuleFor(x => x.SortDescending)
+                //     .NotNull()
+                //     .WithMessage("Sort direction is required when using sorting");
             });
         }
     }

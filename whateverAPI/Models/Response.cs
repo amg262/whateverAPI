@@ -13,8 +13,36 @@ public record JokeResponse
     public string? Content { get; init; }
     public JokeType? Type { get; init; }
     public DateTime CreatedAt { get; init; }
+    
+    public DateTime ModifiedAt { get; init; }
     public List<string>? Tags { get; init; } = [];
     public int? LaughScore { get; init; }
+    
+    // public static List<JokeResponse> FromJokes(IEnumerable<Joke> jokes)
+    // {
+    //     return jokes.Select(joke => joke.ToResponse()).ToList();
+    // }
+    //
+    // public static JokeResponse? FromJoke(Joke? joke)
+    // {
+    //     return joke?.ToResponse();
+    // }
+    
+
+}
+
+public record TagResponse
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public DateTime CreatedAt { get; init; }
+    public DateTime ModifiedAt { get; init; }
+
+    public static List<TagResponse> FromTags(IEnumerable<Tag> tags)
+    {
+        return tags.Select(t => t.ToResponse()).ToList();
+    }
+
 }
 
 public record JokeApiResponse

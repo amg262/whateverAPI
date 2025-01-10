@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Polly;
 using whateverAPI.Entities;
 
 namespace whateverAPI.Data;
@@ -9,16 +10,56 @@ namespace whateverAPI.Data;
 public static class DbInitializer
 {
     /// <summary>
+    /// Initializes the database with a retry policy that uses exponential backoff.
+    /// This is particularly useful in containerized environments where the database
+    /// might take some time to become available.
+    /// </summary>
+    /// <param name="app">The WebApplication instance to extend</param>
+    /// <param name="maxRetryAttempts">Maximum number of retry attempts (default: 50)</param>
+    /// <param name="maxDelaySeconds">Maximum delay between retries in seconds (default: 30)</param>
+    /// <returns>The WebApplication instance for method chaining</returns>
+    public static async Task InitializeDatabaseRetryAsync(this WebApplication app, int maxRetryAttempts = 50,
+        int maxDelaySeconds = 30)
+    {
+        var retryPolicy = Policy
+            .Handle<Exception>()
+            .Or<Npgsql.NpgsqlException>()
+            .Or<System.Net.Sockets.SocketException>()
+            .Or<TimeoutException>()
+            .WaitAndRetryAsync(maxRetryAttempts,
+                retryAttempt => TimeSpan.FromSeconds(Math.Min(Math.Pow(2, retryAttempt), maxDelaySeconds)),
+                onRetry: (exception, timeSpan, retryCount, context) =>
+                {
+                    app.Logger.LogWarning(
+                        // exception,
+                        "Attempt {RetryCount} of {MaxRetries} failed to connect to database, {Exception} Waiting {TimeSpan} before next attempt",
+                        retryCount,
+                        maxRetryAttempts,
+                        exception.InnerException?.Message ?? exception.Message,
+                        timeSpan);
+                });
+
+        var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        await retryPolicy.ExecuteAsync(async () =>
+        {
+            await context.Database.MigrateAsync();
+            await InitDb(app);
+        });
+    }
+
+    /// <summary>
     /// Initializes and seeds the joke database at application startup.
     /// Applies any pending migrations and seeds initial data if necessary.
     /// </summary>
-    public static async Task InitDb(WebApplication app)
+    private static async Task InitDb(WebApplication app)
     {
         using var scope = app.Services.CreateScope();
         await SeedData(scope.ServiceProvider.GetService<AppDbContext>());
     }
 
-    public static async Task SeedData(AppDbContext? context)
+    private static async Task SeedData(AppDbContext? context)
     {
         if (context == null)
         {
@@ -217,6 +258,7 @@ public static class DbInitializer
 
         Console.WriteLine($"Database seeded with {jokes.Count} jokes");
     }
+
     public static async Task<List<Joke>> SeedDataAsync()
     {
         // Create some common tags that can be reused across jokes

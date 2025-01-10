@@ -25,7 +25,7 @@ public interface IJokeService
         CancellationToken ct = default);
 
     Task<List<Joke>> GetJokesByType(FilterRequest request, CancellationToken ct = default);
-    
+
     Task<bool> JokeExistsById(Guid id, CancellationToken ct = default);
     Task<int> GetJokesCountByType(JokeType type, CancellationToken ct = default);
     Task<Joke?> GetJokeById(Guid id, CancellationToken ct = default);
@@ -34,15 +34,17 @@ public interface IJokeService
     Task<Joke?> UpdateJoke(Joke? joke, CancellationToken ct = default);
 }
 
-public class JokeService : IJokeService
+public class JokeService //: IJokeService
 {
     private readonly AppDbContext _db;
+    private TagService _tagService;
     private readonly ILogger<JokeService> _logger;
 
-    public JokeService(AppDbContext db, ILogger<JokeService> logger)
+    public JokeService(AppDbContext db, ILogger<JokeService> logger, TagService tagService)
     {
         _db = db;
         _logger = logger;
+        _tagService = tagService;
     }
 
     public async Task<Joke> CreateJoke(Joke joke, CancellationToken ct = default)
@@ -56,18 +58,21 @@ public class JokeService : IJokeService
 
                 foreach (var tag in newTags)
                 {
-                    var existingTag = await _db.Tags
-                        .FirstOrDefaultAsync(t => t.Name == tag.Name, ct);
+                    // var existingTag = await _db.Tags
+                    //     .FirstOrDefaultAsync(t => t.Name == tag.Name, ct);
+                    //
+                    var tagEntity = await _tagService.CreateOrFindTagAsync(tag.Name, ct);
+                    joke.Tags.Add(tagEntity);
 
-                    if (existingTag == null)
-                    {
-                        _db.Tags.Add(tag);
-                        joke.Tags.Add(tag);
-                    }
-                    else
-                    {
-                        joke.Tags.Add(existingTag);
-                    }
+                    // if (existingTag == null)
+                    // {
+                    //     _db.Tags.Add(tag);
+                    //     joke.Tags.Add(tag);
+                    // }
+                    // else
+                    // {
+                    //     joke.Tags.Add(existingTag);
+                    // }
                 }
             }
 
@@ -302,17 +307,19 @@ public class JokeService : IJokeService
 
                 foreach (var tag in newTags)
                 {
-                    var existingTag = await _db.Tags.FirstOrDefaultAsync(t => t.Name == tag.Name, ct);
-
-                    if (existingTag == null)
-                    {
-                        _db.Tags.Add(tag);
-                        existingJoke.Tags?.Add(tag);
-                    }
-                    else
-                    {
-                        existingJoke.Tags?.Add(existingTag);
-                    }
+                    var tagEntity = await _tagService.CreateOrFindTagAsync(tag.Name, ct);
+                    existingJoke?.Tags?.Add(tagEntity);
+                    // var existingTag = await _db.Tags.FirstOrDefaultAsync(t => t.Name == tag.Name, ct);
+                    //
+                    // if (existingTag == null)
+                    // {
+                    //     _db.Tags.Add(tag);
+                    //     existingJoke.Tags?.Add(tag);
+                    // }
+                    // else
+                    // {
+                    //     existingJoke.Tags?.Add(existingTag);
+                    // }
                 }
             }
 
@@ -338,7 +345,7 @@ public class JokeService : IJokeService
         {
             if (string.IsNullOrEmpty(query)) return [];
 
-            query = query.Trim().ToLower();
+            query = query.ToLower().Trim();
 
             return await _db.Jokes
                 .Include(j => j.Tags)
@@ -354,6 +361,64 @@ public class JokeService : IJokeService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error searching jokes with query: {Query}", query);
+            throw;
+        }
+    }
+
+    public async Task<List<Joke>> SearchAndFilter(FilterRequest request, CancellationToken ct = default)
+    {
+        try
+        {
+            // Start with the base query including tags
+            var query = _db.Jokes
+                .Include(j => j.Tags)
+                .AsNoTracking();
+
+            // Apply type filter if specified
+            if (request.Type != null)
+                query = query.Where(j => j.Type == request.Type);
+
+            // Apply text search if query is provided
+            if (!string.IsNullOrWhiteSpace(request.Query))
+            {
+                var searchTerm = request.Query.ToLower().Trim();
+                query = query.Where(joke =>
+                    joke.Content.ToLower().Contains(searchTerm) ||
+                    joke.Tags.Any(t => t.Name.ToLower().Contains(searchTerm)));
+            }
+
+            // Apply sorting based on request
+            query = !string.IsNullOrEmpty(request.SortBy)
+                ? QueryHelper.ApplySortingWithTags(query, request.SortBy, request.SortDescending ?? false)
+                : query.OrderByDescending(j => j.CreatedAt); // Default sorting by creation date if no sort specified
+
+
+            // Apply pagination if specified
+            query = QueryHelper.ApplyPaging(query, request.PageNumber, request.PageSize);
+
+            // Execute the query and return results
+            var result = await query.ToListAsync(ct);
+
+            _logger.LogInformation(
+                "Search and filter returned {Count} jokes for Type={Type}, Query={Query}, Sort={Sort}",
+                result.Count,
+                request.Type,
+                request.Query ?? "none",
+                request.SortBy ?? "default");
+
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Operation cancelled while performing search and filter");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Error performing search and filter: Type={Type}, Query={Query}",
+                request.Type,
+                request.Query);
             throw;
         }
     }

@@ -3,7 +3,7 @@ using whateverAPI.Models;
 
 namespace whateverAPI.Helpers;
 
-public static class EntityMapper
+public static class Mapper
 {
     public static Joke JokeApiResponseToJoke(JokeApiResponse response) => new()
     {

@@ -14,3 +14,5 @@ whateverAPI.sln.DotSettings.user
 appsettings.Production.json
 
 whateverAPI/whateverAPI.csproj.user
+
+whateverAPI/http-client.private.env.json

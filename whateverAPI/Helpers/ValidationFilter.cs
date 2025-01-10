@@ -1,53 +1,184 @@
-﻿using FluentValidation;
+﻿using System.Diagnostics;
+using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 
 namespace whateverAPI.Helpers;
 
 /// <summary>
-/// A generic endpoint filter that performs FluentValidation-based validation on incoming requests.
-/// This filter integrates with ASP.NET Core's minimal API endpoints to validate request models
-/// before they reach the endpoint handler.
+/// A generic endpoint filter that performs FluentValidation-based validation on incoming requests,
+/// providing rich, consistent validation responses that align with problem details specifications.
 /// </summary>
 /// <typeparam name="T">The type of the request model to validate. Must be a reference type.</typeparam>
-/// <remarks>
-/// This filter works by intercepting requests to endpoints and validating any arguments that match
-/// the specified type parameter T. It uses FluentValidation's IValidator interface to perform the
-/// actual validation.
-/// 
-/// The filter will:
-/// 1. Check if the request contains an argument of type T
-/// 2. If found, validate it using the provided IValidator<T/>
-/// 3. Return a 400 Bad Request if the argument is missing or invalid
-/// 4. Allow the request to proceed if validation passes
-/// </remarks>
 public class ValidationFilter<T> : IEndpointFilter where T : class
 {
     private readonly IValidator<T> _validator;
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IHostEnvironment _environment;
+    private readonly ILogger<ValidationFilter<T>> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the ValidationFilter with the specified validator.
+    /// Initializes a new instance of the ValidationFilter with required services.
     /// </summary>
-    /// <param name="validator">The FluentValidation validator to use for request validation.</param>
-    public ValidationFilter(IValidator<T> validator) => _validator = validator;
+    public ValidationFilter(
+        IValidator<T> validator,
+        IHttpContextAccessor httpContextAccessor,
+        IHostEnvironment environment,
+        ILogger<ValidationFilter<T>> logger)
+    {
+        _validator = validator;
+        _httpContextAccessor = httpContextAccessor;
+        _environment = environment;
+        _logger = logger;
+    }
 
     /// <summary>
     /// Invokes the filter to perform validation on the incoming request.
     /// </summary>
-    /// <param name="context">The context containing the endpoint's arguments and metadata.</param>
-    /// <param name="next">The delegate to invoke the next filter or the endpoint handler.</param>
-    /// <returns>
-    /// - A BadRequest result if the request doesn't contain an argument of type T
-    /// - A ValidationProblem result if validation fails, containing validation error details
-    /// - The result of the next filter or endpoint handler if validation passes
-    /// </returns>
-    public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
+    public async ValueTask<object?> InvokeAsync(
+        EndpointFilterInvocationContext context,
+        EndpointFilterDelegate next)
     {
+        var correlationId = Activity.Current?.Id ?? context.HttpContext.TraceIdentifier;
+
+        // Create a logging scope for the entire validation process
+        using var scope = _logger.BeginScope(new Dictionary<string, object>
+        {
+            ["CorrelationId"] = correlationId,
+            ["Path"] = context.HttpContext.Request.Path,
+            ["Method"] = context.HttpContext.Request.Method,
+            ["ValidatedType"] = typeof(T).Name
+        });
+
+        _logger.LogInformation(
+            "Starting validation for request of type {RequestType} at {Endpoint}",
+            typeof(T).Name,
+            context.HttpContext.Request.Path);
+
+        // Find the argument of type T in the request
         if (context.Arguments.FirstOrDefault(x => x?.GetType() == typeof(T)) is not T argument)
-            return TypedResults.BadRequest("Invalid request");
+        {
+            _logger.LogWarning(
+                "Request validation failed: No valid argument of type {RequestType} found in request",
+                typeof(T).Name);
+
+            return CreateProblemDetails(
+                StatusCodes.Status400BadRequest,
+                "Invalid Request",
+                "Request body is missing or malformed",
+                context.HttpContext);
+        }
+
+        // Perform validation
+        _logger.LogDebug("Executing validation rules for {RequestType}", typeof(T).Name);
 
         var validationResult = await _validator.ValidateAsync(argument);
 
-        return validationResult.IsValid
-            ? await next(context)
-            : TypedResults.ValidationProblem(validationResult.ToDictionary());
+        if (validationResult.IsValid)
+        {
+            _logger.LogInformation(
+                "Validation successful for {RequestType}",
+                typeof(T).Name);
+
+            return await next(context);
+        }
+
+        // Log validation failures with detailed information
+        _logger.LogWarning(
+            "Validation failed for {RequestType} with {ErrorCount} errors: {Errors}",
+            typeof(T).Name,
+            validationResult.Errors.Count,
+            FormatValidationErrors(validationResult.Errors));
+
+        // Create a structured validation response
+        var problemDetails = CreateValidationProblemDetails(
+            validationResult,
+            context.HttpContext);
+
+        // Add correlation ID header for tracking
+        context.HttpContext.Response.Headers.Append("X-Correlation-ID", correlationId);
+
+        return Results.Json(
+            problemDetails,
+            statusCode: StatusCodes.Status422UnprocessableEntity,
+            contentType: "application/problem+json");
+    }
+
+    private ValidationProblemDetails CreateValidationProblemDetails(
+        FluentValidation.Results.ValidationResult validationResult,
+        HttpContext httpContext)
+    {
+        var problemDetails = new ValidationProblemDetails
+        {
+            Status = StatusCodes.Status422UnprocessableEntity,
+            Title = "Validation Failed",
+            Detail = "One or more validation errors occurred.",
+            Instance = httpContext.Request.Path,
+            Type = "https://httpstatuses.com/422"
+        };
+
+        // Group validation errors by property
+        foreach (var error in validationResult.Errors)
+        {
+            if (!problemDetails.Errors.TryGetValue(error.PropertyName, out var value))
+            {
+                problemDetails.Errors[error.PropertyName] = [error.ErrorMessage];
+            }
+            else
+            {
+                var errors = value.ToList();
+                errors.Add(error.ErrorMessage);
+                problemDetails.Errors[error.PropertyName] = errors.ToArray();
+            }
+        }
+
+        // Add additional context to extensions
+        var extensions = new Dictionary<string, object>
+        {
+            ["correlationId"] = Activity.Current?.Id ?? httpContext.TraceIdentifier,
+            ["timestamp"] = DateTimeOffset.UtcNow,
+            ["requestMethod"] = httpContext.Request.Method
+        };
+
+        // Include additional details in development
+        if (_environment.IsDevelopment())
+        {
+            extensions["validatedType"] = typeof(T).Name;
+            extensions["errorCount"] = validationResult.Errors.Count;
+        }
+
+        foreach (var extension in extensions)
+        {
+            problemDetails.Extensions[extension.Key] = extension.Value;
+        }
+
+        return problemDetails;
+    }
+
+    private static ProblemDetails CreateProblemDetails(
+        int statusCode,
+        string title,
+        string detail,
+        HttpContext httpContext)
+    {
+        return new ProblemDetails
+        {
+            Status = statusCode,
+            Title = title,
+            Detail = detail,
+            Instance = httpContext.Request.Path,
+            Type = $"https://httpstatuses.com/{statusCode}",
+            Extensions =
+            {
+                ["correlationId"] = Activity.Current?.Id ?? httpContext.TraceIdentifier,
+                ["timestamp"] = DateTimeOffset.UtcNow,
+                ["requestMethod"] = httpContext.Request.Method
+            }
+        };
+    }
+
+    private static string FormatValidationErrors(IEnumerable<FluentValidation.Results.ValidationFailure> errors)
+    {
+        // Create a concise summary of validation errors for logging
+        return string.Join("; ", errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}"));
     }
 }
