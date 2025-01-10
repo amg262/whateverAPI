@@ -2,6 +2,7 @@
 
 <img src="whateverAPI/wwwroot/mascot.svg" alt="whateverAPI" width="256" height="256">
 
+[![wakatime](https://wakatime.com/badge/user/633fcbd8-9377-4acb-9977-248bcf7b615b/project/865bcd59-7dfb-43a6-995c-ed1fb3762774.svg)](https://wakatime.com/badge/user/633fcbd8-9377-4acb-9977-248bcf7b615b/project/865bcd59-7dfb-43a6-995c-ed1fb3762774)
 ## Overview
 whateverAPI is a robust, RESTful API built with .NET 9.0 that specializes in managing and serving various types of humorous content. It provides a comprehensive set of endpoints for creating, retrieving, and managing jokes with advanced features like categorization, tagging, and engagement tracking.
 
