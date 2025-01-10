@@ -19,6 +19,8 @@ public class Joke : IEntity<Guid>
 
     public List<Tag>? Tags { get; set; } = [];
     public int? LaughScore { get; set; }
+    
+    public bool IsActive { get; set; } = true;
 
 
     public static List<JokeResponse> ToJokeResponses(List<Joke> jokes) => jokes.Select(joke => new JokeResponse
@@ -32,7 +34,8 @@ public class Joke : IEntity<Guid>
             .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
             .Select(t => t.Name)
             .ToList() ?? [],
-        LaughScore = joke.LaughScore
+        LaughScore = joke.LaughScore,
+        IsActive = joke.IsActive
     }).ToList();
 
     // Mapping methods for this entity
@@ -51,7 +54,8 @@ public class Joke : IEntity<Guid>
                     // Id = Guid.CreateVersion7(),
                     Name = tagName.ToLower().Trim()
                 }).ToList() ?? [],
-            LaughScore = request.LaughScore
+            LaughScore = request.LaughScore,
+            IsActive = true
         };
     }
 
@@ -69,7 +73,8 @@ public class Joke : IEntity<Guid>
                     // Id = Guid.CreateVersion7(),
                     Name = tagName.ToLower().Trim()
                 }).ToList() ?? [],
-            LaughScore = request.LaughScore
+            LaughScore = request.LaughScore,
+            IsActive = request.IsActive
         };
     }
 
@@ -93,7 +98,8 @@ public class Joke : IEntity<Guid>
                     Name = response.Category.ToLower().Trim()
                 }
             ],
-            LaughScore = 0
+            LaughScore = 0,
+            IsActive = true
         };
     }
 
@@ -110,7 +116,8 @@ public class Joke : IEntity<Guid>
                 .ToList() ?? [],
             CreatedAt = CreatedAt,
             ModifiedAt = ModifiedAt,
-            LaughScore = LaughScore
+            LaughScore = LaughScore,
+            IsActive = IsActive
         };
     }
 

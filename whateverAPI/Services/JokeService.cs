@@ -386,6 +386,11 @@ public class JokeService //: IJokeService
                     joke.Content.ToLower().Contains(searchTerm) ||
                     joke.Tags.Any(t => t.Name.ToLower().Contains(searchTerm)));
             }
+            
+            if (request.Active.HasValue)
+            {
+                query = query.Where(j => j.IsActive == request.Active);
+            }
 
             // Apply sorting based on request
             query = !string.IsNullOrEmpty(request.SortBy)

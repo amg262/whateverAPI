@@ -48,6 +48,8 @@ public record CreateJokeRequest
     public JokeType Type { get; init; }
     public List<string>? Tags { get; init; }
     public int? LaughScore { get; init; }
+    
+    public bool IsActive { get; set; }
 
     public class Validator : AbstractValidator<CreateJokeRequest>
     {
@@ -80,6 +82,8 @@ public record UpdateJokeRequest
     public List<string>? Tags { get; init; }
     public int? LaughScore { get; init; }
 
+    public bool IsActive { get; set; }
+
     public class Validator : AbstractValidator<UpdateJokeRequest>
     {
         public Validator()
@@ -108,6 +112,7 @@ public record DeleteJokeRequest
 
 public record FilterRequest
 {
+    public bool? Active { get; init; } = true;
     public JokeType? Type { get; init; }
     public string? Query { get; init; }
     public int? PageSize { get; init; }
@@ -144,7 +149,7 @@ public record FilterRequest
             When(x => !string.IsNullOrEmpty(x.SortBy), () =>
             {
                 RuleFor(x => x.SortBy)
-                    .Must(sortBy => new[] { "createdAt", "modifiedAt", "laughScore", "content", "tag" }.Contains(sortBy?.ToLower()))
+                    .Must(sortBy => new[] { "createdAt", "modifiedAt", "laughScore", "content", "tag", "active" }.Contains(sortBy?.ToLower()))
                     .WithMessage("Sort by field must be one of: createdAt, laughScore, content");
 
                 // RuleFor(x => x.SortDescending)

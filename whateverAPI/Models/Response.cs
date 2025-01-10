@@ -18,6 +18,8 @@ public record JokeResponse
     public List<string>? Tags { get; init; } = [];
     public int? LaughScore { get; init; }
     
+    public bool IsActive { get; init; }
+    
     // public static List<JokeResponse> FromJokes(IEnumerable<Joke> jokes)
     // {
     //     return jokes.Select(joke => joke.ToResponse()).ToList();
