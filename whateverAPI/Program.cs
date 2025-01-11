@@ -127,7 +127,7 @@ if (app.Environment.IsDevelopment() || !app.Environment.IsDevelopment())
         opts.Title = "Whatever API";
     });
 }
-
+// test again
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAuthentication().UseAuthorization();
