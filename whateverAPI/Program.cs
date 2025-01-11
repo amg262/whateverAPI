@@ -33,11 +33,14 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("JwtOptions"));
+builder.Services.Configure<GoogleOAuthOptions>(builder.Configuration.GetSection("Authentication:Google"));
 
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<JokeApiService>();
 builder.Services.AddScoped<JokeService>();
 builder.Services.AddScoped<TagService>();
+builder.Services.AddScoped<GoogleAuthService>();
+
 
 builder.Services.AddScoped(typeof(ValidationFilter<>));
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
@@ -45,13 +48,12 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalException>();
 
-builder.Services.Configure<GoogleOAuthOptions>(
-    builder.Configuration.GetSection("Authentication:Google"));
-builder.Services.AddHttpClient<GoogleAuthService>();
-builder.Services.AddScoped<GoogleAuthService>();
 
 // Add memory cache for state parameter
-builder.Services.AddMemoryCache();
+
+
+builder.Services.AddHttpClient<GoogleAuthService>();
+
 
 builder.Services.AddHttpClient<JokeApiService>(client =>
 {
@@ -84,7 +86,7 @@ builder.Services
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["JwtOptions:Issuer"],
             ValidAudience = builder.Configuration["JwtOptions:Audience"],
-            IssuerSigningKey =
+            IssuerSigningKey = 
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtOptions:Secret"] ?? string.Empty))
         };
 
