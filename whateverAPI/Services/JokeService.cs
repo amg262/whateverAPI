@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Data;
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using whateverAPI.Data;
 using whateverAPI.Entities;
@@ -51,6 +52,16 @@ public class JokeService //: IJokeService
     {
         try
         {
+            var jokeExists = await _db.Jokes
+                .AnyAsync(j => j.Content
+                    .ToLower()
+                    .Trim() == joke.Content
+                    .ToLower()
+                    .Trim(), ct);
+            if (jokeExists) 
+                throw new DuplicateNameException("Joke with the same content already exists");
+
+
             if (joke.Tags?.Count > 0)
             {
                 var newTags = joke.Tags.ToList();
@@ -386,7 +397,7 @@ public class JokeService //: IJokeService
                     joke.Content.ToLower().Contains(searchTerm) ||
                     joke.Tags.Any(t => t.Name.ToLower().Contains(searchTerm)));
             }
-            
+
             if (request.Active.HasValue)
             {
                 query = query.Where(j => j.IsActive == request.Active);
