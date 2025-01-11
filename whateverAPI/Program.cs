@@ -22,7 +22,7 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("ProductionConnection"),
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
             o => o.EnableRetryOnFailure())
         .EnableDetailedErrors()
         .EnableSensitiveDataLogging());
@@ -124,7 +124,7 @@ if (app.Environment.IsDevelopment() || !app.Environment.IsDevelopment())
         opts.Layout = ScalarLayout.Modern;
         opts.DefaultFonts = true;
         opts.ShowSidebar = true;
-        opts.Title = "Whatever BRUHHH API";
+        opts.Title = "Whatever MAH API";
     });
 }
 // test again
@@ -433,8 +433,8 @@ tagGroup.MapGet("/", async Task<IResult> (
     .WithSummary("Get all tags")
     .WithOpenApi()
     .Produces<List<TagResponse>>(StatusCodes.Status200OK)
-    .ProducesProblem(StatusCodes.Status404NotFound);
-    // .RequireAuthorization();
+    .ProducesProblem(StatusCodes.Status404NotFound)
+    .RequireAuthorization();
 
 // Get tag by ID
 tagGroup.MapGet("/{id:guid}", async Task<IResult> (
@@ -454,7 +454,7 @@ tagGroup.MapGet("/{id:guid}", async Task<IResult> (
     .WithOpenApi()
     .Produces<TagResponse>(StatusCodes.Status200OK)
     .ProducesProblem(StatusCodes.Status404NotFound);
-// test
+
 // Create new tag
 tagGroup.MapPost("/", async Task<IResult> (
         CreateTagRequest request,
