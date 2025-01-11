@@ -8,12 +8,12 @@ namespace whateverAPI.Services;
 public class GoogleAuthService
 {
     private readonly HttpClient _httpClient;
-    private readonly IOptions<GoogleOAuthOptions> _settings;
+    private readonly IOptions<GoogleOptions> _settings;
     private readonly ILogger<GoogleAuthService> _logger;
 
     public GoogleAuthService(
         HttpClient httpClient,
-        IOptions<GoogleOAuthOptions> settings,
+        IOptions<GoogleOptions> settings,
         ILogger<GoogleAuthService> logger)
     {
         _httpClient = httpClient;

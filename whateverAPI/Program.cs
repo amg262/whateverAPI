@@ -32,8 +32,18 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("JwtOptions"));
-builder.Services.Configure<GoogleOAuthOptions>(builder.Configuration.GetSection("Authentication:Google"));
+builder.Services.AddOptions<JwtOptions>()
+    .BindConfiguration(nameof(JwtOptions))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+builder.Services.AddOptions<GoogleOptions>()
+    .BindConfiguration(nameof(GoogleOptions))
+    .ValidateDataAnnotations() // Optional for validation
+    .ValidateOnStart();
+
+// builder.Services.ConfigureOptions<JwtOptions>();
+// builder.Services.ConfigureOptions<GoogleOptions>();
 
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<JokeApiService>();
@@ -86,7 +96,7 @@ builder.Services
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["JwtOptions:Issuer"],
             ValidAudience = builder.Configuration["JwtOptions:Audience"],
-            IssuerSigningKey = 
+            IssuerSigningKey =
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtOptions:Secret"] ?? string.Empty))
         };
 
@@ -577,7 +587,6 @@ authGroup.MapGet("/callback", async Task<IResult> (
                     locale = googleUser.Locale,
                     familyName = googleUser.FamilyName,
                     givenName = googleUser.GivenName,
-                    
                 }
             });
         }
