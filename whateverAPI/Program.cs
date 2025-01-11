@@ -124,7 +124,7 @@ if (app.Environment.IsDevelopment() || !app.Environment.IsDevelopment())
         opts.Layout = ScalarLayout.Modern;
         opts.DefaultFonts = true;
         opts.ShowSidebar = true;
-        opts.Title = "Whatever API";
+        opts.Title = "Whatever BRUHHH API";
     });
 }
 // test again
