@@ -22,7 +22,7 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+    options.UseNpgsql(builder.Configuration.GetConnectionString("ProductionConnection"),
             o => o.EnableRetryOnFailure())
         .EnableDetailedErrors()
         .EnableSensitiveDataLogging());
@@ -433,8 +433,8 @@ tagGroup.MapGet("/", async Task<IResult> (
     .WithSummary("Get all tags")
     .WithOpenApi()
     .Produces<List<TagResponse>>(StatusCodes.Status200OK)
-    .ProducesProblem(StatusCodes.Status404NotFound)
-    .RequireAuthorization();
+    .ProducesProblem(StatusCodes.Status404NotFound);
+    // .RequireAuthorization();
 
 // Get tag by ID
 tagGroup.MapGet("/{id:guid}", async Task<IResult> (
