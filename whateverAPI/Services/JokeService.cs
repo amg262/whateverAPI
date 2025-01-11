@@ -58,9 +58,8 @@ public class JokeService //: IJokeService
                     .Trim() == joke.Content
                     .ToLower()
                     .Trim(), ct);
-            if (jokeExists) 
-                throw new DuplicateNameException("Joke with the same content already exists");
-
+            
+            if (jokeExists) throw new DuplicateNameException("Joke with the same content already exists");
 
             if (joke.Tags?.Count > 0)
             {
@@ -69,21 +68,8 @@ public class JokeService //: IJokeService
 
                 foreach (var tag in newTags)
                 {
-                    // var existingTag = await _db.Tags
-                    //     .FirstOrDefaultAsync(t => t.Name == tag.Name, ct);
-                    //
                     var tagEntity = await _tagService.CreateOrFindTagAsync(tag.Name, ct);
                     joke.Tags.Add(tagEntity);
-
-                    // if (existingTag == null)
-                    // {
-                    //     _db.Tags.Add(tag);
-                    //     joke.Tags.Add(tag);
-                    // }
-                    // else
-                    // {
-                    //     joke.Tags.Add(existingTag);
-                    // }
                 }
             }
 
@@ -320,17 +306,6 @@ public class JokeService //: IJokeService
                 {
                     var tagEntity = await _tagService.CreateOrFindTagAsync(tag.Name, ct);
                     existingJoke?.Tags?.Add(tagEntity);
-                    // var existingTag = await _db.Tags.FirstOrDefaultAsync(t => t.Name == tag.Name, ct);
-                    //
-                    // if (existingTag == null)
-                    // {
-                    //     _db.Tags.Add(tag);
-                    //     existingJoke.Tags?.Add(tag);
-                    // }
-                    // else
-                    // {
-                    //     existingJoke.Tags?.Add(existingTag);
-                    // }
                 }
             }
 
