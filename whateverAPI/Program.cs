@@ -4,7 +4,6 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using whateverAPI.Data;
@@ -32,15 +31,10 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-builder.Services.AddOptions<JwtOptions>()
-    .BindConfiguration(nameof(JwtOptions))
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
+builder.Services.AddOptions<JwtOptions>().BindConfiguration(nameof(JwtOptions)).ValidateOnStart();
 
-builder.Services.AddOptions<GoogleOptions>()
-    .BindConfiguration(nameof(GoogleOptions))
-    .ValidateDataAnnotations() // Optional for validation
-    .ValidateOnStart();
+builder.Services.AddOptions<GoogleOptions>().BindConfiguration(nameof(GoogleOptions));
+//.ValidateDataAnnotations().ValidateOnStart();
 
 // builder.Services.ConfigureOptions<JwtOptions>();
 // builder.Services.ConfigureOptions<GoogleOptions>();
@@ -72,17 +66,17 @@ builder.Services.AddHttpClient<JokeApiService>(client =>
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 }).AddStandardResilienceHandler();
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy(ProjectHelper.CorsPolicy, policyBuilder =>
-    {
-        policyBuilder
-            .WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
-            .WithMethods(builder.Configuration.GetSection("Cors:AllowedMethods").Get<string[]>() ?? [])
-            .WithHeaders(builder.Configuration.GetSection("Cors:AllowedHeaders").Get<string[]>() ?? [])
-            .AllowCredentials();
-    });
-});
+// builder.Services.AddCors(options =>
+// {
+//     options.AddPolicy(ProjectHelper.CorsPolicy, policyBuilder =>
+//     {
+//         policyBuilder
+//             .WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
+//             .WithMethods(builder.Configuration.GetSection("Cors:AllowedMethods").Get<string[]>() ?? [])
+//             .WithHeaders(builder.Configuration.GetSection("Cors:AllowedHeaders").Get<string[]>() ?? [])
+//             .AllowCredentials();
+//     });
+// });
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -115,7 +109,7 @@ builder.Services
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || !app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference(opts =>
