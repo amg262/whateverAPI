@@ -158,8 +158,8 @@ jokeGroup.MapGet("/", async Task<IResult> (
     .WithOpenApi()
     .Produces<List<JokeResponse>>(StatusCodes.Status200OK)
     .ProducesProblem(StatusCodes.Status404NotFound)
-    .ProducesProblem(StatusCodes.Status401Unauthorized)
-    .RequireAuthorization();
+    .ProducesProblem(StatusCodes.Status401Unauthorized);
+    // .RequireAuthorization();
 
 // Get Joke by ID
 jokeGroup.MapGet("/{id:guid}", async Task<IResult> (
