@@ -45,7 +45,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalException>();
 
-builder.Services.Configure<GoogleOAuthSettings>(
+builder.Services.Configure<GoogleOAuthOptions>(
     builder.Configuration.GetSection("Authentication:Google"));
 builder.Services.AddHttpClient<GoogleAuthService>();
 builder.Services.AddScoped<GoogleAuthService>();
