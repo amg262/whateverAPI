@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Data;
+using Microsoft.EntityFrameworkCore;
 using whateverAPI.Data;
 using whateverAPI.Entities;
 using whateverAPI.Models;
@@ -91,15 +92,15 @@ public class TagService //: ITagService
 
             if (existingTag != null)
             {
-                throw new InvalidOperationException($"Tag with name '{request.Name}' already exists");
+                throw new DuplicateNameException($"Tag with name '{request.Name}' already exists");
             }
 
-            var tag = Tag.FromCreateRequest(request);
+            var newTag = Tag.FromCreateRequest(request);
 
-            _db.Tags.Add(tag);
+            _db.Tags.Add(newTag);
             await _db.SaveChangesAsync(ct);
 
-            return tag;
+            return newTag;
         }
         catch (Exception ex)
         {
@@ -123,10 +124,9 @@ public class TagService //: ITagService
             {
                 throw new InvalidOperationException($"Tag with name '{request.Name}' already exists");
             }
-
+            
+            // var updatedTag = Tag.FromUpdateRequest(request);
             tag.ApplyUpdate(request);
-            tag.ModifiedAt = DateTime.UtcNow;
-
             await _db.SaveChangesAsync(ct);
 
             return tag;

@@ -421,7 +421,7 @@ tagGroup.MapGet("/", async Task<IResult> (
     {
         var tags = await tagService.GetAllTagsAsync(ct);
         return tags.Count != 0
-            ? TypedResults.Ok(TagResponse.FromTags(tags))
+            ? TypedResults.Ok(Tag.ToTagResponses(tags))
             : context.CreateNotFoundProblem("Tags", "all");
     })
     .WithName("GetTags")

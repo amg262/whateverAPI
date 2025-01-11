@@ -29,6 +29,9 @@ public class Tag : IEntity<Guid>
             .ToList();
 
 
+    public static List<TagResponse> FromTags(IEnumerable<Tag> tags) => tags.Select(t => t.ToResponse()).ToList();
+
+
     public static Tag FromName(string name) => new()
     {
         Id = Guid.CreateVersion7(),
@@ -45,6 +48,9 @@ public class Tag : IEntity<Guid>
         {
             Id = Id,
             Name = Name,
+            CreatedAt = CreatedAt,
+            ModifiedAt = ModifiedAt,
+            IsActive = IsActive
         };
     }
 
