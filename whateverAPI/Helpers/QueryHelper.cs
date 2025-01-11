@@ -6,16 +6,6 @@ namespace whateverAPI.Helpers;
 
 public static class QueryHelper
 {
-    // Provides a standard way to sort any IQueryable by a provided property
-    public static IOrderedQueryable<T> ApplySorting<T, TKey>(IQueryable<T> query, Expression<Func<T, TKey>> keySelector,
-        bool descending = false)
-    {
-        // If descending is true, order by descending, otherwise order ascending
-        return descending
-            ? query.OrderByDescending(keySelector)
-            : query.OrderBy(keySelector);
-    }
-
     public static IOrderedQueryable<T> ApplySorting<T, TKey>(IQueryable<T> query, Expression<Func<T, TKey>> keySelector,
         bool? descending = false)
     {
@@ -46,7 +36,7 @@ public static class QueryHelper
 
     public static IQueryable<Joke> ApplySortingWithTags(IQueryable<Joke> query, string sortBy, bool descending)
     {
-        if (sortBy.Equals("tag", StringComparison.OrdinalIgnoreCase))
+        if (sortBy.StartsWith("tag", StringComparison.OrdinalIgnoreCase))
         {
             // First, let's handle the base case where there are no jokes
             if (!query.Any()) return query;
@@ -58,7 +48,6 @@ public static class QueryHelper
                 .Max();
 
             // Start with the first sorting operation
-
             var orderedQuery =
                 // Initial ordering (first tag)
                 descending
