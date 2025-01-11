@@ -1,272 +1,269 @@
-# whateverAPI - A Joke Management API. or whatever
+# WhateverAPI - A Modern Joke Management System with Next.js Frontend
 
 <img src="whateverAPI/wwwroot/mascot.svg" alt="whateverAPI" width="256" height="256">
 
+
 [![wakatime](https://wakatime.com/badge/user/633fcbd8-9377-4acb-9977-248bcf7b615b/project/865bcd59-7dfb-43a6-995c-ed1fb3762774.svg)](https://wakatime.com/badge/user/633fcbd8-9377-4acb-9977-248bcf7b615b/project/865bcd59-7dfb-43a6-995c-ed1fb3762774)
-## Overview
-whateverAPI is a robust, RESTful API built with .NET 9.0 that specializes in managing and serving various types of humorous content. It provides a comprehensive set of endpoints for creating, retrieving, and managing jokes with advanced features like categorization, tagging, and engagement tracking.
+
+## Project Overview
+This project combines a robust .NET 9.0 RESTful API for joke management with a modern Next.js frontend. The system provides comprehensive capabilities for managing and serving humorous content, featuring advanced categorization, tagging, and engagement tracking, all wrapped in a user-friendly web interface.
 
 ## Features
 
 ### Core Functionality
-- ✨ Full CRUD operations for joke management
+- ✨ Full CRUD operations for joke management through both API and UI
 - 🎲 Random joke retrieval with filtering options
-- 🏷️ Advanced categorization system
+- 🏷️ Advanced categorization system with tagging support
 - 📊 Engagement tracking with laugh scores
 - 🔍 Flexible search and filtering capabilities
+- 🎨 Modern, responsive user interface built with Next.js
+- 🌓 Dark mode support using Tailwind CSS
 
 ### Technical Features
-- 🚀 Built on .NET 9.0 for optimal performance
-- ⚡ FastEndpoints for efficient endpoint handling
+- 🚀 Backend built on .NET 9.0 for optimal performance
+- ⚡ Next.js 13+ with App Router for frontend
 - ✅ Comprehensive validation using FluentValidation
 - 📝 Detailed Swagger/OpenAPI documentation
+- 🎯 TypeScript for enhanced development experience
+- 🎨 Tailwind CSS for modern styling
+- 🔒 JWT authentication with Google OAuth integration
 - 🐳 Docker support for easy deployment
 
 ## Project Structure
 
+### Backend (.NET API)
 ```
-whateverAPI/
-├── Features/
-│   └── Jokes/
-│       ├── CreateJoke/
-│       │   ├── CreateJokeEndpoint.cs
-│       │   ├── CreateJokeRequest.cs
-│       │   ├── CreateJokeResponse.cs
-│       │   ├── CreateJokeValidator.cs
-│       │   └── CreateJokeMapper.cs
-│       ├── GetJoke/
-│       │   ├── GetJokeEndpoint.cs
-│       │   ├── GetJokeRequest.cs
-│       │   ├── GetJokeResponse.cs
-│       │   ├── GetJokeValidator.cs
-│       │   └── GetJokeMapper.cs
-│       ├── GetJokesByType/
-│       │   └── [Similar structure]
-│       └── GetRandomJoke/
-│           └── [Similar structure]
-├── Models/
-│   ├── JokeEntry.cs
-│   └── JokeType.cs
+src/
+├── Data/
+│   ├── AppDbContext.cs           # EF Core database context
+│   ├── BaseRepository.cs         # Generic repository pattern
+│   ├── DbInitializer.cs          # Database seeding
+│   └── JokeRepository.cs         # Joke repository
 ├── Services/
-│   ├── IJokeService.cs
-│   └── JokeService.cs
-└── Program.cs
+│   ├── JokeService.cs           # Joke business logic
+│   ├── TagService.cs            # Tag management
+│   ├── JwtTokenService.cs       # Authentication
+│   └── GoogleAuthService.cs     # OAuth integration
+├── Models/
+│   ├── Request.cs               # Request DTOs
+│   └── Response.cs              # Response DTOs
+└── Program.cs                   # Application entry point
 ```
 
-## API Endpoints
-
-### Create Joke
-```http
-POST /api/jokes
+### Frontend (Next.js)
 ```
-Create a new joke entry.
-
-**Request Body:**
-```json
-{
-  "content": "Why did the developer quit his job? He didn't get arrays!",
-  "type": "Joke",
-  "tags": ["programming", "work"]
-}
+app/
+├── components/
+│   ├── JokeForm.tsx            # Joke submission form
+│   └── ui/                     # Reusable UI components
+├── lib/
+│   └── api.ts                  # API integration
+├── styles/
+│   └── globals.css             # Global styles
+└── page.tsx                    # Main page component
 ```
 
-**Response (201 Created):**
-```json
-{
-  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "content": "Why did the developer quit his job? He didn't get arrays!",
-  "type": "Joke",
-  "tags": ["programming", "work"],
-  "createdAt": "2024-12-29T10:30:00Z",
-  "laughScore": 0
-}
-```
-
-### Get Random Joke
-```http
-GET /api/jokes/random
-```
-Retrieve a random joke from the collection.
-
-**Response (200 OK):**
-```json
-{
-  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "content": "...",
-  "type": "Joke",
-  "tags": ["programming", "work"],
-  "createdAt": "2024-12-29T10:30:00Z",
-  "laughScore": 42
-}
-```
-
-### Get Jokes By Type
-```http
-GET /api/jokes/type/{type}
-```
-Retrieve jokes of a specific type with optional filtering and pagination.
-
-**Parameters:**
-- `type` (path): Joke type (Joke, FunnySaying, Discouragement, SelfDeprecating)
-- `pageSize` (query, optional): Number of items per page (default: 10)
-- `pageNumber` (query, optional): Page number (default: 1)
-- `sortBy` (query, optional): Property to sort by (createdAt, laughScore, content)
-- `sortDescending` (query, optional): Sort direction (default: false)
-
-**Example:**
-```http
-GET /api/jokes/type/Joke?pageSize=10&pageNumber=1&sortBy=laughScore&sortDescending=true
-```
-
-## Setup and Installation
+## Getting Started
 
 ### Prerequisites
 - .NET 9.0 SDK
+- Node.js 18+ and npm/yarn
+- PostgreSQL 15+
 - Docker (optional)
-- An IDE (Visual Studio 2022 or JetBrains Rider recommended)
 
-### Local Development Setup
+### Backend Setup
 
-1. **Clone the Repository**
+1. Clone the repository:
 ```bash
 git clone https://github.com/yourusername/whateverAPI.git
 cd whateverAPI
 ```
 
-2. **Restore Dependencies**
-```bash
-dotnet restore
-```
-
-3. **Build the Project**
-```bash
-dotnet build
-```
-
-4. **Run the Project**
-```bash
-dotnet run --project whateverAPI
-```
-
-The API will be available at:
-- HTTP: http://localhost:5000
-- HTTPS: https://localhost:5001
-- Swagger UI: https://localhost:5001/swagger
-
-### Docker Setup
-
-1. **Build the Docker Image**
-```bash
-docker build -t whatever-api .
-```
-
-2. **Run the Container**
-```bash
-docker run -p 8080:80 whatever-api
-```
-
-## Validation Rules
-
-### Create Joke Validation
-- Content:
-    - Required
-    - Minimum length: 10 characters
-    - Maximum length: 500 characters
-- Type:
-    - Must be a valid JokeType enum value
-- Tags:
-    - Maximum 5 tags
-    - Each tag maximum length: 20 characters
-    - No special characters in tags
-
-### Get Jokes By Type Validation
-- Type:
-    - Must be a valid JokeType enum value
-- PageSize:
-    - Range: 1-100
-- PageNumber:
-    - Must be greater than 0
-- SortBy:
-    - Must be one of: createdAt, laughScore, content
-
-## Error Handling
-
-The API uses standard HTTP status codes and returns detailed error messages:
-
+2. Update database connection in `appsettings.json`:
 ```json
 {
-  "errors": {
-    "Content": ["Content must be between 10 and 500 characters."],
-    "Type": ["Invalid joke type specified."],
-    "Tags": ["Maximum 5 tags allowed."]
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Database=whateverdb;Username=postgres;Password=postgrespw;"
   }
 }
 ```
 
-Common Status Codes:
-- 200: Success
-- 201: Created
-- 400: Bad Request (validation error)
-- 404: Not Found
-- 500: Internal Server Error
+3. Run the API:
+```bash
+dotnet restore
+dotnet run
+```
+
+### Frontend Setup
+
+1. Navigate to the Next.js directory:
+```bash
+cd frontend
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Start the development server:
+```bash
+npm run dev
+```
+
+The application will be available at:
+- Frontend: http://localhost:3000
+- API: http://localhost:5000
+- Swagger UI: http://localhost:5000/swagger
+
+## API Endpoints
+
+### Joke Management
+
+#### Create Joke
+```http
+POST /api/jokes
+Content-Type: application/json
+
+{
+  "content": "Why did the developer quit his job? He didn't get arrays!",
+  "type": "Programming",
+  "tags": ["programming", "work"],
+  "isActive": true
+}
+```
+
+#### Get Random Joke
+```http
+GET /api/jokes/random
+```
+
+#### Search Jokes
+```http
+POST /api/jokes/find
+Content-Type: application/json
+
+{
+  "type": "Programming",
+  "query": "developer",
+  "active": true,
+  "pageSize": 10,
+  "pageNumber": 1,
+  "sortBy": "laughScore",
+  "sortDescending": true
+}
+```
+
+## Frontend Components
+
+### JokeForm
+The main form component for submitting new jokes:
+```typescript
+import { useState } from 'react';
+
+export default function JokeForm() {
+    const [jokeContent, setJokeContent] = useState('');
+    // Form implementation...
+}
+```
+
+### Styling
+The project uses Tailwind CSS with a custom configuration:
+```typescript
+// tailwind.config.ts
+export default {
+  content: [
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        background: "var(--background)",
+        foreground: "var(--foreground)",
+      },
+    },
+  },
+}
+```
+
+## Configuration
+
+### Environment Variables
+Create a `.env.local` file in the frontend directory:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-client-id
+```
+
+### Authentication Settings
+Configure JWT and Google OAuth in `appsettings.json`:
+```json
+{
+  "JwtOptions": {
+    "Secret": "your-secret-key",
+    "Issuer": "your-issuer",
+    "ExpirationInDays": 90
+  },
+  "Authentication": {
+    "Google": {
+      "ClientId": "your-client-id",
+      "ClientSecret": "your-client-secret"
+    }
+  }
+}
+```
 
 ## Development Guidelines
 
-### Adding a New Endpoint
-
-1. Create a new feature folder under `Features/Jokes/`
-2. Create the necessary files:
-    - `*Endpoint.cs`
-    - `*Request.cs`
-    - `*Response.cs`
-    - `*Validator.cs`
-    - `*Mapper.cs`
-3. Implement the endpoint following the existing patterns
-4. Update the service layer if needed
-5. Add appropriate tests
-
-### Code Style
-- Use C# latest features and best practices
-- Follow FastEndpoints conventions
-- Implement proper validation
-- Include XML documentation
+### Backend
+- Follow C# coding conventions
+- Include XML documentation for public APIs
+- Implement proper error handling
 - Add appropriate logging
+- Write unit tests for new features
 
-## Testing
+### Frontend
+- Use TypeScript for all new components
+- Follow Next.js best practices
+- Implement proper error handling
+- Use Tailwind CSS for styling
+- Write unit tests using Jest
 
-Run the test suite:
-```bash
-dotnet test
+## Error Handling
+
+The API uses RFC 7807 Problem Details:
+```json
+{
+  "type": "https://httpstatuses.com/404",
+  "title": "Resource Not Found",
+  "status": 404,
+  "detail": "Joke with ID '123' was not found",
+  "traceId": "00-1234567890abcdef-abcdef1234567890-00"
+}
 ```
-
-### Test Categories
-- Unit Tests: Testing individual components
-- Integration Tests: Testing endpoint behavior
-- Service Tests: Testing business logic
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-### Contribution Guidelines
-- Follow the existing code style
-- Add/update tests as needed
-- Update documentation
-- Follow conventional commits
+### Commit Guidelines
+Use conventional commits:
+- feat: New feature
+- fix: Bug fix
+- docs: Documentation changes
+- style: Code style changes
+- refactor: Code refactoring
+- test: Adding tests
+- chore: Maintenance tasks
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- FastEndpoints team for the excellent framework
-- The .NET community for continuous support
-- All contributors who help improve this project
+This project is licensed under the MIT License.
 
 ## Support
 
