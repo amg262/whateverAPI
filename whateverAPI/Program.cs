@@ -571,7 +571,11 @@ authGroup.MapGet("/callback", async Task<IResult> (
                     id = googleUser.Id,
                     email = googleUser.Email,
                     name = googleUser.Name,
-                    picture = googleUser.Picture
+                    picture = googleUser.Picture,
+                    locale = googleUser.Locale,
+                    familyName = googleUser.FamilyName,
+                    givenName = googleUser.GivenName,
+                    
                 }
             });
         }
