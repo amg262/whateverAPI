@@ -22,7 +22,7 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+    options.UseNpgsql(builder.Configuration.GetConnectionString("ProductionConnection"),
             o => o.EnableRetryOnFailure())
         .EnableDetailedErrors()
         .EnableSensitiveDataLogging());
@@ -124,7 +124,7 @@ if (app.Environment.IsDevelopment() || !app.Environment.IsDevelopment())
         opts.Layout = ScalarLayout.Modern;
         opts.DefaultFonts = true;
         opts.ShowSidebar = true;
-        opts.Title = "Whatever MAH API";
+        opts.Title = "Whatever bruh API";
     });
 }
 
