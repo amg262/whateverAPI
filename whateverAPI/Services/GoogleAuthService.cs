@@ -5,12 +5,36 @@ using whateverAPI.Options;
 
 namespace whateverAPI.Services;
 
+/// <summary>
+/// Provides Google OAuth 2.0 authentication services for the application, handling the complete OAuth flow
+/// from initial authorization URL generation to token exchange and user information retrieval.
+/// </summary>
+/// <remarks>
+/// This service implements the OAuth 2.0 authorization code flow for Google authentication:
+/// 1. Generates the authorization URL with specified scopes (GenerateGoogleOAuthUrl)
+/// 2. Exchanges the authorization code for access/refresh tokens (ExchangeCodeForTokens)
+/// 3. Retrieves user information using the access token (GetUserInfo)
+/// 
+/// Required Google OAuth scopes:
+/// - openid: OpenID Connect integration
+/// - email: User's email address
+/// - profile: Basic profile information
+/// - https://www.googleapis.com/auth/user.birthday.read: Access to user's birthday
+/// - https://www.googleapis.com/auth/user.phonenumbers.read: Access to phone numbers
+/// - https://www.googleapis.com/auth/user.addresses.read: Access to addresses
+/// </remarks>
 public class GoogleAuthService
 {
     private readonly HttpClient _httpClient;
     private readonly IOptions<GoogleOptions> _settings;
     private readonly ILogger<GoogleAuthService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the GoogleAuthService with required dependencies.
+    /// </summary>
+    /// <param name="httpClient">HTTP client for making requests to Google APIs</param>
+    /// <param name="settings">Configuration settings for Google OAuth</param>
+    /// <param name="logger">Logger for error tracking and debugging</param>
     public GoogleAuthService(
         HttpClient httpClient,
         IOptions<GoogleOptions> settings,
@@ -21,7 +45,14 @@ public class GoogleAuthService
         _logger = logger;
     }
 
-    // Generate the Google OAuth URL
+    /// <summary>
+    /// Generates the Google OAuth authorization URL with all required scopes and parameters.
+    /// </summary>
+    /// <returns>
+    /// A fully formatted URL string that will redirect users to Google's consent page.
+    /// The URL includes client ID, redirect URI, response type, requested scopes,
+    /// and additional parameters for offline access and consent prompt.
+    /// </returns>
     public string GenerateGoogleOAuthUrl()
     {
         var scopes = new[]
@@ -50,7 +81,18 @@ public class GoogleAuthService
         return $"https://accounts.google.com/o/oauth2/v2/auth?{queryString}";
     }
 
-    // Exchange the code for tokens and user information
+    /// <summary>
+    /// Processes the OAuth callback by exchanging the authorization code for tokens
+    /// and retrieving the user's information from Google.
+    /// </summary>
+    /// <param name="code">The authorization code received from Google's OAuth consent page</param>
+    /// <returns>
+    /// A GoogleUserInfo object containing the authenticated user's information
+    /// retrieved from Google's userinfo endpoint.
+    /// </returns>
+    /// <exception cref="HttpRequestException">
+    /// Thrown when token exchange fails or user information cannot be retrieved
+    /// </exception>
     public async Task<GoogleUserInfo> HandleGoogleCallback(string code)
     {
         // First, exchange the code for tokens
@@ -60,6 +102,16 @@ public class GoogleAuthService
         return await GetUserInfo(tokenResponse.AccessToken);
     }
 
+    /// <summary>
+    /// Exchanges an authorization code for access and refresh tokens.
+    /// </summary>
+    /// <param name="code">The authorization code to exchange</param>
+    /// <returns>
+    /// A GoogleTokenResponse containing access token, refresh token, and related metadata
+    /// </returns>
+    /// <exception cref="HttpRequestException">
+    /// Thrown when the token exchange fails or returns invalid data
+    /// </exception>
     private async Task<GoogleTokenResponse> ExchangeCodeForTokens(string code)
     {
         var tokenRequest = new Dictionary<string, string>
@@ -86,6 +138,16 @@ public class GoogleAuthService
         return response ?? throw new HttpRequestException("Invalid token response");
     }
 
+    /// <summary>
+    /// Retrieves user information from Google's userinfo endpoint using an access token.
+    /// </summary>
+    /// <param name="accessToken">The access token to authenticate the request</param>
+    /// <returns>
+    /// A GoogleUserInfo object containing the user's profile information
+    /// </returns>
+    /// <exception cref="HttpRequestException">
+    /// Thrown when user information cannot be retrieved or is invalid
+    /// </exception>
     private async Task<GoogleUserInfo> GetUserInfo(string accessToken)
     {
         _httpClient.DefaultRequestHeaders.Authorization =

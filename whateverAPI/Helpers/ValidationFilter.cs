@@ -5,10 +5,37 @@ using Microsoft.AspNetCore.Mvc;
 namespace whateverAPI.Helpers;
 
 /// <summary>
-/// A generic endpoint filter that performs FluentValidation-based validation on incoming requests,
-/// providing rich, consistent validation responses that align with problem details specifications.
+/// Provides standardized request validation using FluentValidation, implementing RFC 7807 Problem Details
+/// for HTTP APIs to ensure consistent error reporting across the application.
 /// </summary>
-/// <typeparam name="T">The type of the request model to validate. Must be a reference type.</typeparam>
+/// <typeparam name="T">The type of request model to validate. Must be a reference type.</typeparam>
+/// <remarks>
+/// This filter implements a comprehensive validation pipeline that enhances API reliability and debugging:
+/// 
+/// Validation Process:
+/// The filter performs request validation in several stages:
+/// 1. Establishes correlation tracking for end-to-end request tracing
+/// 2. Locates and extracts the model to validate from the request
+/// 3. Applies FluentValidation rules to the model
+/// 4. Generates structured validation responses for any failures
+/// 
+/// Problem Details Implementation:
+/// Follows RFC 7807 specifications for HTTP API problem details, providing:
+/// - Consistent error response structure
+/// - Machine-readable error types
+/// - Human-readable error descriptions
+/// - Detailed validation context
+/// - Environment-specific debugging information
+/// 
+/// Security and Debugging Features:
+/// - Correlation ID tracking for request tracing
+/// - Structured logging with contextual information
+/// - Environment-aware error detail exposure
+/// - Standardized error response formats
+/// 
+/// Usage Example:
+/// This filter is typically applied to API endpoints that require request validation:
+/// </remarks>
 public class ValidationFilter<T> : IEndpointFilter where T : class
 {
     private readonly IValidator<T> _validator;
@@ -17,8 +44,13 @@ public class ValidationFilter<T> : IEndpointFilter where T : class
     private readonly ILogger<ValidationFilter<T>> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the ValidationFilter with required services.
+    /// Initializes a new instance of the ValidationFilter with necessary dependencies for
+    /// request validation and error handling.
     /// </summary>
+    /// <param name="validator">FluentValidation validator for type T</param>
+    /// <param name="httpContextAccessor">Provides access to the current HTTP context</param>
+    /// <param name="environment">Provides environment information for conditional behavior</param>
+    /// <param name="logger">Logger for validation events and errors</param>
     public ValidationFilter(
         IValidator<T> validator,
         IHttpContextAccessor httpContextAccessor,
@@ -32,8 +64,15 @@ public class ValidationFilter<T> : IEndpointFilter where T : class
     }
 
     /// <summary>
-    /// Invokes the filter to perform validation on the incoming request.
+    /// Processes incoming requests through the validation pipeline, ensuring data validity
+    /// before allowing the request to proceed.
     /// </summary>
+    /// <param name="context">The endpoint filter invocation context</param>
+    /// <param name="next">The delegate for the next filter in the pipeline</param>
+    /// <returns>
+    /// Either the result of the next filter in the pipeline if validation succeeds,
+    /// or a Problem Details response if validation fails.
+    /// </returns>
     public async ValueTask<object?> InvokeAsync(
         EndpointFilterInvocationContext context,
         EndpointFilterDelegate next)
@@ -103,6 +142,13 @@ public class ValidationFilter<T> : IEndpointFilter where T : class
             contentType: "application/problem+json");
     }
 
+    /// <summary>
+    /// Creates a detailed validation problem response that adheres to RFC 7807 specifications
+    /// while providing rich debugging information.
+    /// </summary>
+    /// <param name="validationResult">The validation result containing any validation failures</param>
+    /// <param name="httpContext">The current HTTP context for request details</param>
+    /// <returns>A ValidationProblemDetails object containing structured error information</returns>
     private ValidationProblemDetails CreateValidationProblemDetails(
         FluentValidation.Results.ValidationResult validationResult,
         HttpContext httpContext)
@@ -154,6 +200,14 @@ public class ValidationFilter<T> : IEndpointFilter where T : class
         return problemDetails;
     }
 
+    /// <summary>
+    /// Creates a standard problem details response for non-validation related errors.
+    /// </summary>
+    /// <param name="statusCode">The HTTP status code for the response</param>
+    /// <param name="title">A brief, human-readable summary of the problem</param>
+    /// <param name="detail">A detailed explanation of the error</param>
+    /// <param name="httpContext">The current HTTP context</param>
+    /// <returns>A ProblemDetails object containing the error information</returns>
     private static ProblemDetails CreateProblemDetails(
         int statusCode,
         string title,
@@ -176,9 +230,6 @@ public class ValidationFilter<T> : IEndpointFilter where T : class
         };
     }
 
-    private static string FormatValidationErrors(IEnumerable<FluentValidation.Results.ValidationFailure> errors)
-    {
-        // Create a concise summary of validation errors for logging
-        return string.Join("; ", errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}"));
-    }
+    private static string FormatValidationErrors(IEnumerable<FluentValidation.Results.ValidationFailure> errors) =>
+        string.Join("; ", errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}"));
 }

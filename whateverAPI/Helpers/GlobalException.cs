@@ -12,15 +12,26 @@ using Microsoft.Data.SqlClient;
 namespace whateverAPI.Helpers;
 
 /// <summary>
-/// Global exception handler that provides detailed, structured error responses
-/// while maintaining security and following best practices for error handling.
+/// Provides centralized exception handling for the entire application, implementing secure error reporting
+/// while following RFC 7807 Problem Details for HTTP APIs specification.
 /// </summary>
+/// <remarks>
+/// This exception handler serves as the application's central point for converting various types of exceptions
+/// into structured, secure HTTP responses. It implements several important security and usability features:
+/// </remarks>
 internal sealed class GlobalException : IExceptionHandler
 {
     private readonly ILogger<GlobalException> _logger;
     private readonly IHostEnvironment _environment;
     private readonly IHttpContextAccessor _httpContextAccessor;
 
+    /// <summary>
+    /// Initializes a new instance of the GlobalException handler with required dependencies
+    /// for error processing and environment-aware behavior.
+    /// </summary>
+    /// <param name="logger">Logger for error tracking and auditing</param>
+    /// <param name="environment">Environment information for conditional behavior</param>
+    /// <param name="httpContextAccessor">Access to HTTP context for request details</param>
     public GlobalException(ILogger<GlobalException> logger, IHostEnvironment environment,
         IHttpContextAccessor httpContextAccessor)
     {
@@ -29,6 +40,14 @@ internal sealed class GlobalException : IExceptionHandler
         _httpContextAccessor = httpContextAccessor;
     }
 
+    /// <summary>
+    /// Processes exceptions into structured HTTP responses while maintaining security and providing
+    /// appropriate error details based on the environment.
+    /// </summary>
+    /// <param name="httpContext">The current HTTP context</param>
+    /// <param name="exception">The exception to handle</param>
+    /// <param name="cancellationToken">Token for cancellation support</param>
+    /// <returns>True if the exception was handled; otherwise, false</returns>
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,
@@ -69,6 +88,12 @@ internal sealed class GlobalException : IExceptionHandler
         return true;
     }
 
+    /// <summary>
+    /// Processes exceptions to determine appropriate HTTP status codes and descriptions
+    /// while maintaining security through message sanitization.
+    /// </summary>
+    /// <param name="exception">The exception to analyze</param>
+    /// <returns>A tuple containing the HTTP status code and safe error description</returns>
     private (int StatusCode, string Description) GetExceptionDetails(Exception exception) => exception switch
     {
         // HTTP and Network Errors
@@ -116,6 +141,16 @@ internal sealed class GlobalException : IExceptionHandler
             "An unexpected error occurred")
     };
 
+    /// <summary>
+    /// Creates a detailed problem response following RFC 7807 specifications while
+    /// implementing environment-aware detail exposure.
+    /// </summary>
+    /// <param name="context">The HTTP context for request details</param>
+    /// <param name="statusCode">The HTTP status code</param>
+    /// <param name="description">The error description</param>
+    /// <param name="exception">The original exception</param>
+    /// <param name="correlationId">The correlation ID for tracking</param>
+    /// <returns>A ProblemDetails object containing the error information</returns>
     private ProblemDetails CreateProblemDetails(
         HttpContext context,
         int statusCode,
@@ -161,6 +196,17 @@ internal sealed class GlobalException : IExceptionHandler
         return problemDetails;
     }
 
+    /// <summary>
+    /// Formats validation errors into a structured, client-friendly format
+    /// while maintaining security through proper error aggregation.
+    /// </summary>
+    /// <remarks>
+    /// This method implements a secure approach to validation error reporting:
+    /// - Groups errors by property for clarity
+    /// - Maintains error message integrity
+    /// - Provides structured JSON output
+    /// - Ensures consistent error format
+    /// </remarks>
     private static string FormatValidationError(ValidationException exception)
     {
         // Convert FluentValidation errors into a more readable format
@@ -178,6 +224,17 @@ internal sealed class GlobalException : IExceptionHandler
         });
     }
 
+    /// <summary>
+    /// Creates secure database error messages that avoid exposing sensitive
+    /// information while providing useful feedback.
+    /// </summary>
+    /// <remarks>
+    /// Implements environment-aware database error handling:
+    /// - Development: Includes error codes and details
+    /// - Production: Generic error messages only
+    /// - Proper sanitization of error information
+    /// - Consistent error format across environments
+    /// </remarks>
     private string GetDatabaseErrorMessage(Exception dbException)
     {
         // In production, don't expose internal database errors
@@ -194,6 +251,17 @@ internal sealed class GlobalException : IExceptionHandler
         };
     }
 
+    /// <summary>
+    /// Creates secure, environment-aware error messages by sanitizing sensitive information
+    /// from exception details.
+    /// </summary>
+    /// <param name="exception">The exception containing the original error message</param>
+    /// <returns>A sanitized error message safe for external consumption</returns>
+    /// <remarks>
+    /// Usage Example:
+    /// In development: "Violation of unique constraint 'IX_Users_Email'"
+    /// In production: "An error occurred while processing your request"
+    /// </remarks>
     private string GetSafeMessage(Exception exception)
     {
         // In production, we might want to sanitize or limit certain error messages
@@ -205,6 +273,12 @@ internal sealed class GlobalException : IExceptionHandler
         return exception.Message;
     }
 
+    /// <summary>
+    /// Provides standardized, human-readable descriptions for HTTP status codes
+    /// following RFC 7231 and common web standards.
+    /// </summary>
+    /// <param name="statusCode">The HTTP status code to describe</param>
+    /// <returns>A standardized description of the status code</returns>
     private static string GetStatusDescription(int statusCode) => statusCode switch
     {
         StatusCodes.Status100Continue => "Continue",

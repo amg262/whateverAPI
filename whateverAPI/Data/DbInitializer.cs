@@ -5,19 +5,54 @@ using whateverAPI.Entities;
 namespace whateverAPI.Data;
 
 /// <summary>
-/// Provides functionality to initialize and seed the database with joke data.
+/// Provides database initialization and seeding functionality with robust error handling and retry logic,
+/// particularly designed for containerized environments where database availability might be delayed.
 /// </summary>
+/// <remarks>
+/// This static class implements a comprehensive database initialization strategy that addresses several
+/// critical aspects of database management in modern applications:
+/// 
+/// Infrastructure Considerations:
+/// - Handles delayed database availability in containerized environments
+/// - Implements exponential backoff for connection retries
+/// - Provides detailed logging of initialization attempts
+/// - Supports proper error handling and recovery
+/// 
+/// Data Management:
+/// - Ensures database schema is up to date through migrations
+/// - Implements idempotent seeding operations
+/// - Maintains data consistency through careful initialization
+/// - Provides diverse sample data for testing
+/// 
+/// The initialization process is designed to be resilient and self-healing,
+/// making it particularly suitable for cloud deployments and container orchestration
+/// environments where service availability might be initially unstable.
+/// </remarks>
 public static class DbInitializer
 {
     /// <summary>
-    /// Initializes the database with a retry policy that uses exponential backoff.
-    /// This is particularly useful in containerized environments where the database
-    /// might take some time to become available.
+    /// Initializes the database with an intelligent retry strategy using exponential backoff,
+    /// making it resilient to temporary connection issues in containerized environments.
     /// </summary>
-    /// <param name="app">The WebApplication instance to extend</param>
-    /// <param name="maxRetryAttempts">Maximum number of retry attempts (default: 50)</param>
-    /// <param name="maxDelaySeconds">Maximum delay between retries in seconds (default: 30)</param>
-    /// <returns>The WebApplication instance for method chaining</returns>
+    /// <param name="app">The web application instance to configure</param>
+    /// <param name="maxRetryAttempts">Maximum number of connection retry attempts</param>
+    /// <param name="maxDelaySeconds">Maximum delay between retries in seconds</param>
+    /// <returns>The web application instance for method chaining</returns>
+    /// <remarks>
+    /// This method implements a sophisticated retry strategy that handles common startup scenarios:
+    /// 
+    /// Retry Implementation:
+    /// - Uses exponential backoff to avoid overwhelming the database
+    /// - Implements maximum delay cap to prevent excessive waiting
+    /// - Provides detailed logging of retry attempts
+    /// - Handles various database connection exceptions
+    /// 
+    /// The method specifically handles these scenarios:
+    /// - Database container still starting up
+    /// - Network connectivity issues
+    /// - Temporary database unavailability
+    /// - Connection timeouts
+    /// </remarks>
     public static async Task InitializeDatabaseRetryAsync(this WebApplication app, int maxRetryAttempts = 50,
         int maxDelaySeconds = 30)
     {
@@ -50,15 +85,33 @@ public static class DbInitializer
     }
 
     /// <summary>
-    /// Initializes and seeds the joke database at application startup.
-    /// Applies any pending migrations and seeds initial data if necessary.
+    /// Performs the core database initialization process, including migration application
+    /// and data seeding operations.
     /// </summary>
+    /// <param name="app">The web application instance</param>
+    /// <remarks>
+    /// This method orchestrates the database initialization workflow:
+    /// 
+    /// Initialization Steps:
+    /// 1. Creates a scoped database context
+    /// 2. Applies any pending migrations
+    /// 3. Seeds initial data if needed
+    /// 4. Ensures proper resource cleanup
+    /// 
+    /// The method is designed to be idempotent, meaning it can be safely
+    /// executed multiple times without causing data duplication or inconsistency.
+    /// </remarks>
     private static async Task InitDb(WebApplication app)
     {
         using var scope = app.Services.CreateScope();
         await SeedData(scope.ServiceProvider.GetService<AppDbContext>());
     }
 
+    /// <summary>
+    /// Seeds the database with a carefully curated set of initial data, providing
+    /// a rich variety of jokes across different categories and types.
+    /// </summary>
+    /// <param name="context">The database context to use for seeding</param>
     private static async Task SeedData(AppDbContext? context)
     {
         if (context == null)
@@ -330,6 +383,11 @@ public static class DbInitializer
         Console.WriteLine($"Database seeded with {jokes.Count} jokes");
     }
 
+    /// <summary>
+    /// Creates a collection of sample jokes with associated tags for testing
+    /// and development purposes.
+    /// </summary>
+    /// <returns>A list of joke entities with properly initialized relationships</returns>
     public static async Task<List<Joke>> SeedDataAsync()
     {
         // Create some common tags that can be reused across jokes

@@ -5,6 +5,10 @@ using whateverAPI.Models;
 
 namespace whateverAPI.Services;
 
+/// <summary>
+/// Provides functionality to fetch jokes from an external API, process them, and store them in the local database.
+/// This service handles the complete workflow of joke retrieval, tag processing, and persistence.
+/// </summary>
 public class JokeApiService
 {
     private readonly HttpClient _httpClient;
@@ -12,6 +16,13 @@ public class JokeApiService
     private readonly AppDbContext _db;
     private readonly ILogger<JokeApiService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the JokeApiService with required dependencies.
+    /// </summary>
+    /// <param name="httpClient">HTTP client for making requests to the external joke API</param>
+    /// <param name="logger">Logger for tracking operations and errors</param>
+    /// <param name="db">Database context for persisting jokes and related data</param>
+    /// <param name="tagService">Service for managing joke tags</param>
     public JokeApiService(HttpClient httpClient, ILogger<JokeApiService> logger, AppDbContext db, TagService tagService)
     {
         _httpClient = httpClient;
@@ -20,6 +31,21 @@ public class JokeApiService
         _tagService = tagService;
     }
 
+    /// <summary>
+    /// Retrieves a joke from the external API, processes it, and stores it in the database.
+    /// </summary>
+    /// <param name="ct">Cancellation token to cancel the operation if needed</param>
+    /// <returns>
+    /// A Task that represents the asynchronous operation. The task result contains:
+    /// - The newly created Joke entity if successful
+    /// - null if the API request fails or returns invalid data
+    /// </returns>
+    /// <exception cref="OperationCanceledException">
+    /// Thrown when the operation is cancelled via the cancellation token
+    /// </exception>
+    /// <exception cref="Exception">
+    /// Thrown when an unexpected error occurs during API communication or data processing
+    /// </exception>
     public async Task<Joke?> GetExternalJoke(CancellationToken ct = default)
     {
         try
@@ -38,23 +64,23 @@ public class JokeApiService
             if (jokeResponse == null || jokeResponse.Error) return null;
 
             // var joke = Mapper.JokeApiResponseToJoke(jokeResponse);
-            var joke = Joke.FromJokeApiResponse(jokeResponse);
+            var newJoke = Joke.FromJokeApiResponse(jokeResponse);
 
             // Clear the tags that were created in FromJokeApiResponse
-            var tagNames = joke.Tags?.Select(t => t.Name).ToList() ?? [];
-            joke.Tags?.Clear();
+            var tagNames = newJoke.Tags?.Select(t => t.Name).ToList() ?? [];
+            newJoke.Tags?.Clear();
 
             // Add each tag using the TagService
             foreach (var tagName in tagNames)
             {
                 var tagEntity = await _tagService.CreateOrFindTagAsync(tagName, ct);
-                joke.Tags ??= [];
-                joke.Tags.Add(tagEntity);
+                newJoke.Tags ??= [];
+                newJoke.Tags.Add(tagEntity);
             }
 
-            _db.Jokes.Add(joke);
+            _db.Jokes.Add(newJoke);
             await _db.SaveChangesAsync(ct);
-            return joke;
+            return newJoke;
         }
         catch (OperationCanceledException)
         {

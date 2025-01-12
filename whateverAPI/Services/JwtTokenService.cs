@@ -10,8 +10,21 @@ using whateverAPI.Options;
 
 namespace whateverAPI.Services;
 
+/// <summary>
+/// Defines the contract for JWT token management operations.
+/// </summary>
+/// <remarks>
+/// This interface establishes the essential operations needed for JWT token handling in the application,
+/// including token generation, validation, and invalidation. It ensures a consistent approach to
+/// token-based authentication across the application.
+/// </remarks>
 public interface IJwtTokenService
 {
+    /// <summary>
+    /// Retrieves the JWT token from either cookies or the authorization header.
+    /// </summary>
+    /// <param name="context">Optional message context for token extraction during authentication</param>
+    /// <returns>The JWT token if found; otherwise, null</returns>
     string? GetToken(MessageReceivedContext? context = null);
 
     /// <summary>
@@ -36,8 +49,24 @@ public interface IJwtTokenService
 }
 
 /// <summary>
-/// Provides token management services for authentication purposes.
+/// Implements comprehensive JWT (JSON Web Token) management for secure authentication and authorization.
 /// </summary>
+/// <remarks>
+/// This service provides a robust implementation of JWT token management with the following security features:
+/// 
+/// Security Measures:
+/// - Uses secure HTTP-only cookies for token storage
+/// - Implements strict SameSite cookie policies
+/// - Includes IP address validation in token claims
+/// - Supports both cookie and bearer token authentication
+/// - Implements secure token invalidation
+/// 
+/// Token Management Features:
+/// - Flexible token retrieval from both cookies and authorization headers
+/// - Comprehensive token validation including issuer and audience verification
+/// - Secure token generation with claims-based identity
+/// - Cookie management with security-first defaults
+/// </remarks>
 public class JwtTokenService : IJwtTokenService
 {
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -59,6 +88,19 @@ public class JwtTokenService : IJwtTokenService
         _options = options.Value;
     }
 
+    /// <summary>
+    /// Retrieves the current authentication token from either cookies or the authorization header.
+    /// </summary>
+    /// <remarks>
+    /// This method implements a fallback mechanism for token retrieval:
+    /// 1. First attempts to retrieve the token from secure HTTP-only cookies
+    /// 2. If not found in cookies, checks the Authorization header for a bearer token
+    /// 3. Updates the message context with the token if provided
+    /// 
+    /// This dual retrieval strategy supports both:
+    /// - Browser-based applications using secure cookies
+    /// - API clients using bearer token authentication
+    /// </remarks>
     public string? GetToken(MessageReceivedContext? context = null)
     {
         // Check if the token exists in the cookies
@@ -99,6 +141,16 @@ public class JwtTokenService : IJwtTokenService
         _httpContextAccessor.HttpContext?.Response.Cookies.Delete(ProjectHelper.TokenCookie);
     }
 
+    /// <summary>
+    /// Manages secure storage of authentication tokens in HTTP-only cookies.
+    /// </summary>
+    /// <remarks>
+    /// Implements secure cookie storage with the following protections:
+    /// - HTTP-only flag prevents JavaScript access
+    /// - Secure flag ensures HTTPS-only transmission
+    /// - Strict SameSite policy prevents CSRF attacks
+    /// - Extended expiration for persistent sessions
+    /// </remarks>
     private void SaveTokenCookie(string token)
     {
         var cookieOptions = new CookieOptions

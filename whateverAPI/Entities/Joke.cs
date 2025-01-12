@@ -5,6 +5,21 @@ using whateverAPI.Models;
 
 namespace whateverAPI.Entities;
 
+/// <summary>
+/// Represents a joke entity in the database, implementing a rich domain model with mapping capabilities
+/// and relationship management. This entity serves as both a database model and a domain object,
+/// handling data persistence and business logic for jokes in the system.
+/// </summary>
+/// <remarks>
+/// Data Relationships:
+/// - Many-to-many relationship with Tags
+/// - Proper cascade behavior for related entities
+/// - Efficient querying support through navigation properties
+/// 
+/// The entity supports various data operations through its mapping methods,
+/// providing a clean interface between different application layers while
+/// maintaining data consistency and domain rules.
+/// </remarks>
 public class Joke : IEntity<Guid>
 {
     [Key]
@@ -19,10 +34,21 @@ public class Joke : IEntity<Guid>
 
     public List<Tag>? Tags { get; set; } = [];
     public int? LaughScore { get; set; }
-    
+
     public bool IsActive { get; set; } = true;
 
-
+    /// <summary>
+    /// Converts a collection of joke entities to their response representation,
+    /// implementing a clean separation between domain and API layers.
+    /// </summary>
+    /// <param name="jokes">Collection of joke entities to convert</param>
+    /// <returns>Collection of joke responses with properly formatted data</returns>
+    /// <remarks>
+    /// This method handles several important transformations:
+    /// - Proper tag ordering for consistent presentation
+    /// - Null safety for optional properties
+    /// - Clean data projection for API responses
+    /// </remarks>
     public static List<JokeResponse> ToJokeResponses(List<Joke> jokes) => jokes.Select(joke => new JokeResponse
     {
         Id = joke.Id,
@@ -38,7 +64,20 @@ public class Joke : IEntity<Guid>
         IsActive = joke.IsActive
     }).ToList();
 
-    // Mapping methods for this entity
+    /// <summary>
+    /// Creates a new joke entity from an API creation request, implementing proper
+    /// domain object construction with consistent data initialization.
+    /// </summary>
+    /// <param name="request">The API request containing new joke data</param>
+    /// <returns>A fully initialized joke entity ready for persistence</returns>
+    /// <remarks>
+    /// This factory method ensures:
+    /// - Proper ID generation using GUIDs
+    /// - Consistent timestamp initialization
+    /// - Proper tag name normalization
+    /// - Default value initialization
+    /// - Active status setting
+    /// </remarks>
     public static Joke FromCreateRequest(CreateJokeRequest request)
     {
         return new Joke
@@ -60,6 +99,20 @@ public class Joke : IEntity<Guid>
         };
     }
 
+    /// <summary>
+    /// Creates a joke entity from an update request, maintaining existing identity
+    /// while applying new values from the request.
+    /// </summary>
+    /// <param name="id">The existing joke's identifier</param>
+    /// <param name="request">The update request containing new values</param>
+    /// <returns>A joke entity with updated values ready for persistence</returns>
+    /// <remarks>
+    /// This method implements update logic that:
+    /// - Preserves entity identity
+    /// - Updates modification timestamp
+    /// - Handles tag updates properly
+    /// - Maintains data consistency
+    /// </remarks>
     public static Joke FromUpdateRequest(Guid id, UpdateJokeRequest request)
     {
         return new Joke
@@ -80,6 +133,19 @@ public class Joke : IEntity<Guid>
         };
     }
 
+    /// <summary>
+    /// Creates a joke entity from an external API response, implementing proper
+    /// data transformation and normalization.
+    /// </summary>
+    /// <param name="response">The external API response containing joke data</param>
+    /// <returns>A properly formatted joke entity ready for local storage</returns>
+    /// <remarks>
+    /// This method handles several special cases:
+    /// - Different joke format types (single vs. setup/delivery)
+    /// - Category to tag conversion
+    /// - Proper timestamp initialization
+    /// - Default score setting
+    /// </remarks>
     public static Joke FromJokeApiResponse(JokeApiResponse response)
     {
         return new Joke
@@ -105,7 +171,19 @@ public class Joke : IEntity<Guid>
         };
     }
 
-    public JokeResponse ToResponse()
+    /// <summary>
+    /// Converts the current joke entity to its API response representation,
+    /// implementing proper data projection.
+    /// </summary>
+    /// <returns>A formatted joke response ready for API consumption</returns>
+    /// <remarks>
+    /// The conversion process includes:
+    /// - Tag ordering and normalization
+    /// - Null handling for optional properties
+    /// - Proper data formatting for API consumers
+    /// - Complete entity projection
+    /// </remarks>
+    private JokeResponse ToResponse()
     {
         return new JokeResponse
         {
@@ -123,8 +201,49 @@ public class Joke : IEntity<Guid>
         };
     }
 
-    public static JokeResponse? ToResponse(Joke? joke)
+    /// <summary>
+    /// Provides a null-safe way to convert a potentially null joke entity
+    /// to its response representation.
+    /// </summary>
+    /// <param name="joke">The joke entity that might be null</param>
+    /// <returns>A joke response if the input is not null; otherwise, null</returns>
+    /// <remarks>
+    /// This helper method ensures safe handling of:
+    /// - Null entities
+    /// - Optional conversions
+    /// - Consistent null propagation
+    /// </remarks>
+    public static JokeResponse? ToResponse(Joke? joke) => joke?.ToResponse();
+    
+    /// <summary>
+    /// Updates an existing joke's properties with values from a new joke, preserving
+    /// existing values when new values are null.
+    /// </summary>
+    /// <param name="existingJoke">The joke entity to update</param>
+    /// <param name="newJoke">The joke containing new values</param>
+    public static void MapJokeUpdate(Joke existingJoke, Joke newJoke)
     {
-        return joke?.ToResponse();
+        existingJoke.ModifiedAt = DateTime.UtcNow;
+        if (newJoke.Content != null) existingJoke.Content = newJoke.Content;
+        if (newJoke.Type != null) existingJoke.Type = newJoke.Type;
+        if (newJoke.LaughScore != null) existingJoke.LaughScore = newJoke.LaughScore;
+        existingJoke.IsActive = newJoke.IsActive;
     }
+    
+    /// <summary>
+    /// Updates an existing joke's properties with values from a new joke, preserving
+    /// existing values when new values are null.
+    /// </summary>
+    /// <param name="existingJoke">The joke entity to update</param>
+    /// <param name="newJoke">The joke containing new values</param>
+    public static Joke UpdateExistingJoke(Joke existingJoke, Joke newJoke)
+    {
+        existingJoke.ModifiedAt = DateTime.UtcNow;
+        if (newJoke.Content != null) existingJoke.Content = newJoke.Content;
+        if (newJoke.Type != null) existingJoke.Type = newJoke.Type;
+        if (newJoke.LaughScore != null) existingJoke.LaughScore = newJoke.LaughScore;
+        existingJoke.IsActive = newJoke.IsActive;
+        return existingJoke;
+    }
+    
 }

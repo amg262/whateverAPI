@@ -3,9 +3,6 @@ using whateverAPI.Entities;
 
 namespace whateverAPI.Models;
 
-public class Response
-{
-}
 
 public record JokeResponse
 {
@@ -84,7 +81,6 @@ public record GoogleTokenResponse
 public record GoogleUserInfo
 {
     [JsonPropertyName("id")] public string Id { get; init; } = "";
-
     [JsonPropertyName("email")] public string Email { get; init; } = "";
 
     [JsonPropertyName("verified_email")] public bool EmailVerified { get; init; }

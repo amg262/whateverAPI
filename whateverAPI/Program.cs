@@ -39,7 +39,7 @@ builder.Services.AddOptions<GoogleOptions>().BindConfiguration(nameof(GoogleOpti
 // builder.Services.ConfigureOptions<JwtOptions>();
 // builder.Services.ConfigureOptions<GoogleOptions>();
 
-builder.Services.AddScoped<JwtTokenService>();
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<JokeApiService>();
 builder.Services.AddScoped<JokeService>();
 builder.Services.AddScoped<TagService>();
@@ -56,7 +56,7 @@ builder.Services.AddExceptionHandler<GlobalException>();
 // Add memory cache for state parameter
 
 
-builder.Services.AddHttpClient<GoogleAuthService>();
+builder.Services.AddHttpClient<GoogleAuthService>().AddStandardResilienceHandler();
 
 
 builder.Services.AddHttpClient<JokeApiService>(client =>
@@ -98,7 +98,7 @@ builder.Services
         {
             OnMessageReceived = context =>
             {
-                var jwtTokenService = context.HttpContext.RequestServices.GetRequiredService<JwtTokenService>();
+                var jwtTokenService = context.HttpContext.RequestServices.GetRequiredService<IJwtTokenService>();
                 jwtTokenService.GetToken(context);
                 return Task.CompletedTask;
             }
@@ -127,6 +127,7 @@ if (app.Environment.IsDevelopment() || !app.Environment.IsDevelopment())
         opts.Title = "Whatever MAH API";
     });
 }
+
 // test again
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -159,7 +160,7 @@ jokeGroup.MapGet("/", async Task<IResult> (
     .Produces<List<JokeResponse>>(StatusCodes.Status200OK)
     .ProducesProblem(StatusCodes.Status404NotFound)
     .ProducesProblem(StatusCodes.Status401Unauthorized);
-    // .RequireAuthorization();
+// .RequireAuthorization();
 
 // Get Joke by ID
 jokeGroup.MapGet("/{id:guid}", async Task<IResult> (
@@ -378,7 +379,7 @@ jokeGroup.MapGet("/whatever", async Task<IResult> (
 // User Login
 userGroup.MapPost("/login", async Task<IResult> (
         [FromBody] UserLoginRequest request,
-        JwtTokenService jwtTokenService,
+        IJwtTokenService jwtTokenService,
         HttpContext context) =>
     {
         var jwtToken = jwtTokenService.GenerateToken(request.Username, request.Email);
@@ -398,7 +399,7 @@ userGroup.MapPost("/login", async Task<IResult> (
 
 // User Logout
 userGroup.MapPost("/logout", async Task<IResult> (
-        [FromServices] JwtTokenService jwtTokenService,
+        [FromServices] IJwtTokenService jwtTokenService,
         HttpContext context) =>
     {
         var token = jwtTokenService.GetToken();
@@ -445,7 +446,7 @@ tagGroup.MapGet("/{id:guid}", async Task<IResult> (
     {
         var tag = await tagService.GetTagByIdAsync(id, ct);
         return tag is not null
-            ? TypedResults.Ok(tag.ToResponse())
+            ? TypedResults.Ok(Tag.ToResponse(tag))
             : context.CreateNotFoundProblem("Tag", id.ToString());
     })
     .WithName("GetTagById")
@@ -465,7 +466,7 @@ tagGroup.MapPost("/", async Task<IResult> (
         try
         {
             var tag = await tagService.CreateTagAsync(request, ct);
-            return TypedResults.Created($"/api/tags/{tag.Id}", tag.ToResponse());
+            return TypedResults.Created($"/api/tags/{tag.Id}", Tag.ToResponse(tag));
         }
         catch (InvalidOperationException ex)
         {
@@ -493,7 +494,7 @@ tagGroup.MapPut("/{id:guid}", async Task<IResult> (
         {
             var tag = await tagService.UpdateTagAsync(id, request, ct);
             return tag is not null
-                ? TypedResults.Ok(tag.ToResponse())
+                ? TypedResults.Ok(Tag.ToResponse(tag))
                 : context.CreateNotFoundProblem("Tag", id.ToString());
         }
         catch (InvalidOperationException ex)
@@ -550,7 +551,7 @@ authGroup.MapGet("/login", async Task<IResult> (
 authGroup.MapGet("/callback", async Task<IResult> (
         HttpRequest request,
         GoogleAuthService googleAuthService,
-        JwtTokenService jwtService) =>
+        IJwtTokenService jwtService) =>
     {
         // Get the authorization code from the query string
         var code = request.Query["code"].ToString();
@@ -782,7 +783,7 @@ app.Run();
 //     .ProducesProblem(StatusCodes.Status502BadGateway);
 //
 // // User Login
-// userGroup.MapPost("/login", async Task<IResult> ([FromBody] UserLoginRequest request, JwtTokenService jwtTokenService, HttpContext context) =>
+// userGroup.MapPost("/login", async Task<IResult> ([FromBody] UserLoginRequest request, IJwtTokenService jwtTokenService, HttpContext context) =>
 //     {
 //         var jwtToken = jwtTokenService.GenerateToken(request.Username, request.Email);
 //         return !string.IsNullOrEmpty(jwtToken)
@@ -800,7 +801,7 @@ app.Run();
 //     .AddEndpointFilter<ValidationFilter<UserLoginRequest>>();
 //
 // // User Logout
-// userGroup.MapPost("/logout", async Task<IResult> ([FromServices] JwtTokenService jwtTokenService, HttpContext context) =>
+// userGroup.MapPost("/logout", async Task<IResult> ([FromServices] IJwtTokenService jwtTokenService, HttpContext context) =>
 //     {
 //         var token = jwtTokenService.GetToken();
 //         if (string.IsNullOrEmpty(token))
