@@ -13,7 +13,7 @@ using whateverAPI.Models;
 using whateverAPI.Options;
 using whateverAPI.Services;
 
-
+// not sure why fail
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration
     .SetBasePath(builder.Environment.ContentRootPath)
