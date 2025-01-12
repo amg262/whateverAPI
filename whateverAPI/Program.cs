@@ -22,7 +22,7 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("ProductionConnection"),
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
             o => o.EnableRetryOnFailure())
         .EnableDetailedErrors()
         .EnableSensitiveDataLogging());
