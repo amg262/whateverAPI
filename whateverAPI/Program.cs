@@ -36,8 +36,6 @@ builder.Services.AddOptions<JwtOptions>().BindConfiguration(nameof(JwtOptions)).
 builder.Services.AddOptions<GoogleOptions>().BindConfiguration(nameof(GoogleOptions));
 //.ValidateDataAnnotations().ValidateOnStart();
 
-// builder.Services.ConfigureOptions<JwtOptions>();
-// builder.Services.ConfigureOptions<GoogleOptions>();
 
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<JokeApiService>();
@@ -68,7 +66,7 @@ builder.Services.AddHttpClient<JokeApiService>(client =>
 
 // builder.Services.AddCors(options =>
 // {
-//     options.AddPolicy(ProjectHelper.CorsPolicy, policyBuilder =>
+//     options.AddPolicy(Helper.CorsPolicy, policyBuilder =>
 //     {
 //         policyBuilder
 //             .WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
@@ -115,7 +113,7 @@ if (app.Environment.IsDevelopment() || !app.Environment.IsDevelopment())
     app.MapScalarApiReference(opts =>
     {
         opts.Theme = ScalarTheme.Saturn;
-        opts.WithHttpBearerAuthentication(bearer => { bearer.Token = ProjectHelper.AuthToken; });
+        opts.WithHttpBearerAuthentication(bearer => { bearer.Token = Helper.AuthToken; });
         opts.DefaultHttpClient = new KeyValuePair<ScalarTarget, ScalarClient>(ScalarTarget.CSharp, ScalarClient.HttpClient);
         opts.Favicon = "/favicon.ico";
         opts.OperationSorter = OperationSorter.Method;

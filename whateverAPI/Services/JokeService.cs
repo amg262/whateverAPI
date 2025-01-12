@@ -428,7 +428,13 @@ public class JokeService //: IJokeService
             // existingJoke.LaughScore = joke.LaughScore ?? existingJoke.LaughScore;
             // existingJoke.IsActive = joke.IsActive;
             
-            Joke.MapJokeUpdate(existingJoke, joke);
+            // Joke.MapJokeUpdate(existingJoke, joke);
+            
+            existingJoke.MapObject<Joke>(joke);
+            
+            var j = existingJoke.MapObject<Joke>(joke);
+
+            Console.WriteLine(j.Content);
 
             // var updatedJoke = Joke.UpdateExistingJoke(existingJoke, joke);
             

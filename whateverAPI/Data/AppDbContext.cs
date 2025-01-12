@@ -19,7 +19,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Joke>()
             .HasMany(j => j.Tags)
             .WithMany()//t => t.Jokes)
-            .UsingEntity(j => j.ToTable(ProjectHelper.JokeTagsTableName));
+            .UsingEntity(j => j.ToTable(Helper.JokeTagsTableName));
 
         base.OnModelCreating(modelBuilder);
     }

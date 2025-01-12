@@ -104,7 +104,7 @@ public class JwtTokenService : IJwtTokenService
     public string? GetToken(MessageReceivedContext? context = null)
     {
         // Check if the token exists in the cookies
-        if (_httpContextAccessor.HttpContext?.Request.Cookies.TryGetValue(ProjectHelper.TokenCookie, out var token) == true)
+        if (_httpContextAccessor.HttpContext?.Request.Cookies.TryGetValue(Helper.TokenCookie, out var token) == true)
         {
             if (context != null)
             {
@@ -137,8 +137,8 @@ public class JwtTokenService : IJwtTokenService
             Expires = DateTime.Now.AddDays(-2)
         };
 
-        _httpContextAccessor.HttpContext?.Response.Cookies.Append(ProjectHelper.TokenCookie, "", cookieOptions);
-        _httpContextAccessor.HttpContext?.Response.Cookies.Delete(ProjectHelper.TokenCookie);
+        _httpContextAccessor.HttpContext?.Response.Cookies.Append(Helper.TokenCookie, "", cookieOptions);
+        _httpContextAccessor.HttpContext?.Response.Cookies.Delete(Helper.TokenCookie);
     }
 
     /// <summary>
@@ -160,7 +160,7 @@ public class JwtTokenService : IJwtTokenService
             SameSite = SameSiteMode.Strict,
             Expires = DateTime.UtcNow.AddDays(400)
         };
-        _httpContextAccessor.HttpContext?.Response.Cookies.Append(ProjectHelper.TokenCookie, token, cookieOptions);
+        _httpContextAccessor.HttpContext?.Response.Cookies.Append(Helper.TokenCookie, token, cookieOptions);
     }
 
     /// <summary>

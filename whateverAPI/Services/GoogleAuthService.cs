@@ -26,7 +26,7 @@ namespace whateverAPI.Services;
 public class GoogleAuthService
 {
     private readonly HttpClient _httpClient;
-    private readonly IOptions<GoogleOptions> _settings;
+    private readonly GoogleOptions _settings;
     private readonly ILogger<GoogleAuthService> _logger;
 
     /// <summary>
@@ -41,7 +41,7 @@ public class GoogleAuthService
         ILogger<GoogleAuthService> logger)
     {
         _httpClient = httpClient;
-        _settings = settings;
+        _settings = settings.Value;
         _logger = logger;
     }
 
@@ -67,8 +67,8 @@ public class GoogleAuthService
 
         var queryParams = new Dictionary<string, string>
         {
-            ["client_id"] = _settings.Value.ClientId,
-            ["redirect_uri"] = _settings.Value.RedirectUri,
+            ["client_id"] = _settings.ClientId,
+            ["redirect_uri"] = _settings.RedirectUri,
             ["response_type"] = "code",
             ["scope"] = string.Join(" ", scopes),
             ["access_type"] = "offline",
@@ -117,15 +117,14 @@ public class GoogleAuthService
         var tokenRequest = new Dictionary<string, string>
         {
             ["code"] = code,
-            ["client_id"] = _settings.Value.ClientId,
-            ["client_secret"] = _settings.Value.ClientSecret,
-            ["redirect_uri"] = _settings.Value.RedirectUri,
+            ["client_id"] = _settings.ClientId,
+            ["client_secret"] = _settings.ClientSecret,
+            ["redirect_uri"] = _settings.RedirectUri,
             ["grant_type"] = "authorization_code"
         };
 
-        var tokenResponse = await _httpClient.PostAsync(
-            "https://oauth2.googleapis.com/token",
-            new FormUrlEncodedContent(tokenRequest));
+        var tokenResponse = await _httpClient
+            .PostAsync("https://oauth2.googleapis.com/token", new FormUrlEncodedContent(tokenRequest));
 
         if (!tokenResponse.IsSuccessStatusCode)
         {
@@ -155,8 +154,7 @@ public class GoogleAuthService
 
         try
         {
-            var response = await _httpClient.GetAsync(
-                "https://www.googleapis.com/oauth2/v2/userinfo");
+            var response = await _httpClient.GetAsync("https://www.googleapis.com/oauth2/v2/userinfo");
 
             if (!response.IsSuccessStatusCode)
             {
