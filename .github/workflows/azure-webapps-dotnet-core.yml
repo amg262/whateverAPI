@@ -94,6 +94,7 @@ jobs:
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: .net-app
         env:
-          Authentication__Google__ClientId: ${{ secrets.GOOGLE_CLIENT_ID }}
-          Authentication__Google__ClientSecret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          Authentication__Google__RedirectUri: ${{ secrets.GOOGLE_REDIRECT_URI }}
+          GoogleOptions__ClientId: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GoogleOptions__ClientSecret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GoogleOptions__RedirectUri: ${{ secrets.GOOGLE_REDIRECT_URI }}
+          
