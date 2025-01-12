@@ -51,7 +51,14 @@ jobs:
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
-
+      - name: Set up App Service settings
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI: ${{ secrets.GOOGLE_REDIRECT_URI }}
+        run: |
+          echo "Setting ASPNETCORE_ENVIRONMENT=Production"
+          echo "ASPNETCORE_ENVIRONMENT=Production" >> $GITHUB_ENV
       - name: Build with dotnet
         run: dotnet build --configuration Release
 
@@ -85,4 +92,8 @@ jobs:
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+          package: .net-app
+        env:
+          Authentication__Google__ClientId: ${{ secrets.GOOGLE_CLIENT_ID }}
+          Authentication__Google__ClientSecret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          Authentication__Google__RedirectUri: ${{ secrets.GOOGLE_REDIRECT_URI }}
