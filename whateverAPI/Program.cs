@@ -31,7 +31,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
-builder.Services.AddOptions<JwtOptions>().BindConfiguration(nameof(JwtOptions)).ValidateOnStart();
+builder.Services.AddOptions<JwtOptions>().BindConfiguration(nameof(JwtOptions));
 
 builder.Services.AddOptions<GoogleOptions>().BindConfiguration(nameof(GoogleOptions));
 //.ValidateDataAnnotations().ValidateOnStart();
@@ -143,7 +143,7 @@ var tagGroup = apiGroup.MapGroup("/tags").WithTags("Tags");
 jokeGroup.MapGet("/", async Task<IResult> (
         JokeService jokeService,
         HttpContext context,
-        CancellationToken ct) =>
+        CancellationToken ct = default) =>
     {
         var jokes = await jokeService.GetJokes(ct);
         return jokes is not null && jokes.Count != 0
@@ -169,7 +169,7 @@ jokeGroup.MapGet("/{id:guid}", async Task<IResult> (
     {
         var joke = await jokeService.GetJokeById(id, ct);
         return joke is not null
-            ? TypedResults.Ok(Joke.ToResponse(joke))
+            ? TypedResults.Ok<JokeResponse>(Joke.ToResponse(joke))
             // ? TypedResults.Ok(Mapper.JokeToJokeResponse(joke))
             : context.CreateNotFoundProblem("Joke", id.ToString());
     })
@@ -195,7 +195,7 @@ jokeGroup.MapPost("/", async Task<IResult> (
         // var response = JokeResponse.FromJoke(created);
         // var response = Mapper.JokeToJokeResponse(created);
         return response is not null
-            ? TypedResults.Created($"/api/jokes/{created.Id}", response)
+            ? TypedResults.Created<JokeResponse>($"/api/jokes/{created.Id}", response)
             : context.CreateUnprocessableEntityProblem("Create Joke");
     })
     .WithName("CreateJoke")

@@ -222,10 +222,10 @@ public class JokeService //: IJokeService
                     "content" => j => j.Content,
                     _ => j => j.CreatedAt
                 };
-                query = QueryHelper.ApplySorting(query, keySelector, sortDescending);
+                query = query.ApplySorting(keySelector, sortDescending);
             }
 
-            query = QueryHelper.ApplyPaging(query, pageNumber, pageSize);
+            query = query.ApplyPaging(pageNumber, pageSize);
 
             return query.ToListAsync(ct);
         }
@@ -268,10 +268,10 @@ public class JokeService //: IJokeService
                     "content" => j => j.Content,
                     _ => j => j.CreatedAt
                 };
-                query = QueryHelper.ApplySorting(query, keySelector, request.SortDescending);
+                query = query.ApplySorting(keySelector, request.SortDescending);
             }
 
-            query = QueryHelper.ApplyPaging(query, request.PageNumber, request.PageSize);
+            query = query.ApplyPaging(request.PageNumber, request.PageSize);
 
             var result = await query.ToListAsync(ct);
 
@@ -422,22 +422,8 @@ public class JokeService //: IJokeService
                 return null;
             }
             
-
-            // existingJoke.Content = joke.Content ?? existingJoke.Content;
-            // existingJoke.Type = joke.Type ?? existingJoke.Type;
-            // existingJoke.LaughScore = joke.LaughScore ?? existingJoke.LaughScore;
-            // existingJoke.IsActive = joke.IsActive;
-            
-            // Joke.MapJokeUpdate(existingJoke, joke);
-            
             existingJoke.MapObject<Joke>(joke);
-            
-            var j = existingJoke.MapObject<Joke>(joke);
 
-            Console.WriteLine(j.Content);
-
-            // var updatedJoke = Joke.UpdateExistingJoke(existingJoke, joke);
-            
             if (joke.Tags?.Count > 0)
             {
                 var newTags = joke.Tags.ToList();
@@ -530,16 +516,6 @@ public class JokeService //: IJokeService
     /// - Type-based filtering
     /// - Active status filtering
     /// - Custom sort ordering
-    /// 
-    /// Query Optimization:
-    /// - Uses efficient LINQ expressions
-    /// - Includes related data
-    /// - Implements pagination
-    /// 
-    /// The search is performed on:
-    /// - Joke content (case-insensitive)
-    /// - Tag names (case-insensitive)
-    /// - Combined results are properly paginated and sorted
     /// </remarks>
     /// <param name="request">Filter parameters including search term, type, and pagination info</param>
     /// <param name="ct">Cancellation token for operation cancellation</param>
@@ -573,12 +549,12 @@ public class JokeService //: IJokeService
 
             // Apply sorting based on request
             query = !string.IsNullOrEmpty(request.SortBy)
-                ? QueryHelper.ApplySortingWithTags(query, request.SortBy, request.SortDescending ?? false)
+                ? query.ApplySortingWithTags(request.SortBy, request.SortDescending ?? false)
                 : query.OrderByDescending(j => j.CreatedAt); // Default sorting by creation date if no sort specified
 
 
             // Apply pagination if specified
-            query = QueryHelper.ApplyPaging(query, request.PageNumber, request.PageSize);
+            query = query.ApplyPaging(request.PageNumber, request.PageSize);
 
             // Execute the query and return results
             var result = await query.ToListAsync(ct);

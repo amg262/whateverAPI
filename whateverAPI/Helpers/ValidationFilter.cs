@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using FluentValidation;
+using FluentValidation.Results;
 using Microsoft.AspNetCore.Mvc;
 
 namespace whateverAPI.Helpers;
@@ -136,7 +137,7 @@ public class ValidationFilter<T> : IEndpointFilter where T : class
         // Add correlation ID header for tracking
         context.HttpContext.Response.Headers.Append("X-Correlation-ID", correlationId);
 
-        return Results.Json(
+        return TypedResults.Json(
             problemDetails,
             statusCode: StatusCodes.Status422UnprocessableEntity,
             contentType: "application/problem+json");
@@ -150,7 +151,7 @@ public class ValidationFilter<T> : IEndpointFilter where T : class
     /// <param name="httpContext">The current HTTP context for request details</param>
     /// <returns>A ValidationProblemDetails object containing structured error information</returns>
     private ValidationProblemDetails CreateValidationProblemDetails(
-        FluentValidation.Results.ValidationResult validationResult,
+        ValidationResult validationResult,
         HttpContext httpContext)
     {
         var problemDetails = new ValidationProblemDetails
@@ -230,6 +231,6 @@ public class ValidationFilter<T> : IEndpointFilter where T : class
         };
     }
 
-    private static string FormatValidationErrors(IEnumerable<FluentValidation.Results.ValidationFailure> errors) =>
+    private static string FormatValidationErrors(IEnumerable<ValidationFailure> errors) =>
         string.Join("; ", errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}"));
 }
