@@ -297,6 +297,24 @@ jokeGroup.MapGet("/random", async Task<IResult> (
     .Produces<JokeResponse>(StatusCodes.Status200OK)
     .ProducesProblem(StatusCodes.Status404NotFound);
 
+jokeGroup.MapGet("/klump", async Task<IResult> (
+        JokeService jokeService,
+        HttpContext context,
+        CancellationToken ct) =>
+    {
+        var joke = await jokeService.GetRandomJoke(ct);
+        return joke is not null
+            ? TypedResults.Ok(joke.Content.Replace("\n", " "))
+            // ? TypedResults.Ok(Mapper.JokeToJokeResponse(joke))
+            : context.CreateNotFoundProblem("Jokes", "klump");
+    })
+    .WithName("Klump")
+    .WithDescription("Klump")
+    .WithSummary("Klump")
+    .WithOpenApi()
+    .Produces<string>(StatusCodes.Status200OK)
+    .ProducesProblem(StatusCodes.Status404NotFound);
+
 // Search Jokes
 jokeGroup.MapGet("/search", async Task<IResult> (
         [FromQuery(Name = "q")] string query,
