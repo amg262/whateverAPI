@@ -31,7 +31,7 @@ public interface IJwtTokenService
     /// Generates a JWT token with claims including the user's IP address.
     /// </summary>
     /// <returns>A JWT token string.</returns>
-    string GenerateToken(string? name, string? email, string? userId, string? provider, bool saveCookie = true);
+    string GenerateToken(string? name, string? email, string? userId, string? provider, string? imageUrl, bool saveCookie = true);
 
     /// <summary>
     /// Validates the given JWT token.
@@ -167,7 +167,7 @@ public class JwtTokenService : IJwtTokenService
     /// Generates a JWT token with claims including the user's IP address.
     /// </summary>
     /// <returns>A JWT token string.</returns>
-    public string GenerateToken(string? name, string? email, string? userId, string? provider, bool saveCookie = true)
+    public string GenerateToken(string? name, string? email, string? userId, string? provider, string? imageUrl, bool saveCookie = true)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
@@ -187,6 +187,11 @@ public class JwtTokenService : IJwtTokenService
             new("uid", userId ?? "Unknown"),
             new("provider", provider ?? "Unknown"),
         };
+        
+        if (!string.IsNullOrEmpty(imageUrl))
+        {
+            claims.Add(new Claim("picture", imageUrl));
+        }
 
         // token descriptor with issuer, audience, expiration, signing credentials, and claims
         var tokenDescriptor = new SecurityTokenDescriptor

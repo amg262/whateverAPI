@@ -64,11 +64,11 @@ public class MicrosoftAuthService
     /// Processes the OAuth callback by exchanging the authorization code for tokens
     /// and retrieving the user's information from Microsoft.
     /// </summary>
-    public async Task<MicrosoftUserInfo> HandleMicrosoftCallback(string code)
-    {
-        var tokenResponse = await ExchangeCodeForTokens(code);
-        return await GetUserInfo(tokenResponse.AccessToken);
-    }
+    // public async Task<MicrosoftUserInfo> HandleMicrosoftCallback(string code)
+    // {
+    //     var tokenResponse = await ExchangeCodeForTokens(code);
+    //     return await GetUserInfo(tokenResponse.AccessToken);
+    // }
 
     /// <summary>
     /// Exchanges an authorization code for access and refresh tokens.
@@ -126,6 +126,62 @@ public class MicrosoftAuthService
         {
             _httpClient.DefaultRequestHeaders.Authorization = null;
         }
+    }
+    
+    private async Task<string?> GetUserPhotoUrl(string accessToken)
+    {
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", accessToken);
+
+        try
+        {
+            // Request the photo bytes directly from Microsoft Graph
+            var response = await _httpClient.GetAsync("https://graph.microsoft.com/v1.0/me/photo/$value");
+
+
+            return null;
+            
+            // this shit works but its complicated as a mf
+            // this shit works but its complicated as a mf
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("User photo not found or not accessible");
+                return null;
+            }
+
+            // Read the photo bytes
+            var photoBytes = await response.Content.ReadAsByteArrayAsync();
+            
+            // Get the content type (usually image/jpeg)
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/jpeg";
+            
+            // Convert to base64 data URL
+            var base64Photo = Convert.ToBase64String(photoBytes);
+            
+            
+            return $"data:{contentType};base64,{base64Photo}";
+            
+            return null;  // User has no photo
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to retrieve user photo URL");
+            return null;
+        }
+        finally
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = null;
+        }
+    }
+
+    public async Task<(MicrosoftUserInfo UserInfo, string? PhotoUrl)> HandleMicrosoftCallback(string code)
+    {
+        var tokenResponse = await ExchangeCodeForTokens(code);
+        var userInfo = await GetUserInfo(tokenResponse.AccessToken);
+        var photoUrl = await GetUserPhotoUrl(tokenResponse.AccessToken);
+        
+        return (userInfo, photoUrl);
     }
 }
 

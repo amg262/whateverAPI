@@ -155,6 +155,8 @@ var apiGroup = app.MapGroup("/api");
 var jokeGroup = apiGroup.MapGroup("/jokes").WithTags("Jokes");
 var userGroup = apiGroup.MapGroup("/user").WithTags("User");
 var tagGroup = apiGroup.MapGroup("/tags").WithTags("Tags");
+var googleAuthGroup = app.MapGroup("/api/auth/google").WithTags("Authentication");
+var microsoftAuthGroup = app.MapGroup("/api/auth/microsoft").WithTags("Authentication");
 
 // Get All Jokes
 jokeGroup.MapGet("/", async Task<IResult> (
@@ -224,29 +226,6 @@ jokeGroup.MapPost("/", async Task<IResult> (
     .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
     .ProducesValidationProblem(StatusCodes.Status400BadRequest)
     .AddEndpointFilter<ValidationFilter<CreateJokeRequest>>();
-
-// Get Jokes by Type
-// jokeGroup.MapGet("/type", async Task<IResult> (
-//     [AsParameters] FilterRequest request, 
-//     JokeService jokeService, 
-//     HttpContext context, 
-//     CancellationToken ct) =>
-// {
-//     var jokes = await jokeService.GetJokesByType(request, ct);
-//     return jokes.Count != 0
-//         ? TypedResults.Ok(Joke.ToJokeResponses(jokes))
-//             // ? TypedResults.Ok(JokeResponse.FromJokes(jokes))
-//             // ? TypedResults.Ok(Mapper.JokesToJokeReponses(jokes))
-//         : context.CreateNotFoundProblem("Jokes", $"type {request.Type}");
-// })
-// .WithName("GetJokesByType")
-// .WithDescription("Retrieves jokes filtered by type with optional sorting and pagination")
-// .WithSummary("Get jokes by type")
-// .WithOpenApi()
-// .Produces<List<JokeResponse>>(StatusCodes.Status200OK)
-// .ProducesProblem(StatusCodes.Status404NotFound)
-// .ProducesValidationProblem(StatusCodes.Status400BadRequest)
-// .AddEndpointFilter<ValidationFilter<FilterRequest>>();
 
 // Update Joke
 jokeGroup.MapPut("/{id:guid}", async Task<IResult> (
@@ -415,7 +394,8 @@ userGroup.MapPost("/login", async Task<IResult> (
         IJwtTokenService jwtTokenService,
         HttpContext context) =>
     {
-        var jwtToken = jwtTokenService.GenerateToken(request.Username, request.Email, Guid.CreateVersion7().ToString(), "local");
+        var jwtToken = jwtTokenService.GenerateToken(request.Username, request.Email, Guid.CreateVersion7().ToString(), "local",
+            string.Empty);
         return !string.IsNullOrEmpty(jwtToken)
             ? TypedResults.Ok(new { request.Username, Token = jwtToken })
             : context.CreateUnauthorizedProblem("Invalid credentials provided");
@@ -565,11 +545,10 @@ tagGroup.MapDelete("/{id:guid}", async Task<IResult> (
     .ProducesProblem(StatusCodes.Status404NotFound);
 
 
-// Create an API group for authentication endpoints
-var authGroup = app.MapGroup("/api/auth/google").WithTags("Authentication");
+
 
 // Endpoint to start the OAuth flow
-authGroup.MapGet("/login", async Task<IResult> (
+googleAuthGroup.MapGet("/login", async Task<IResult> (
         GoogleAuthService googleAuthService,
         HttpResponse response) =>
     {
@@ -578,10 +557,15 @@ authGroup.MapGet("/login", async Task<IResult> (
         return TypedResults.Ok(authUrl);
     })
     .WithName("GoogleLogin")
-    .WithOpenApi();
+    .WithDescription("Initiates the Google OAuth2 authentication flow by generating an authorization URL")
+    .WithSummary("Start Google authentication")
+    .WithOpenApi()
+    .Produces<string>(StatusCodes.Status200OK, "application/json")
+    .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+    .ProducesProblem(StatusCodes.Status500InternalServerError);
 
 // Endpoint to handle the OAuth callback
-authGroup.MapGet("/callback", async Task<IResult> (
+googleAuthGroup.MapGet("/callback", async Task<IResult> (
         HttpRequest request,
         GoogleAuthService googleAuthService,
         IJwtTokenService jwtService) =>
@@ -600,7 +584,7 @@ authGroup.MapGet("/callback", async Task<IResult> (
             var googleUser = await googleAuthService.HandleGoogleCallback(code);
 
             // Generate your application's JWT
-            var token = jwtService.GenerateToken(googleUser.Name, googleUser.Email, googleUser.Id, "google");
+            var token = jwtService.GenerateToken(googleUser.Name, googleUser.Email, googleUser.Id, "google", googleUser.Picture);
 
             // Return the user information and token
             return TypedResults.Ok(new
@@ -624,10 +608,14 @@ authGroup.MapGet("/callback", async Task<IResult> (
         }
     })
     .WithName("GoogleCallback")
-    .WithOpenApi();
+    .WithDescription(
+        "Handles the OAuth2 callback from Google, exchanging the authorization code for user information and generating a JWT token")
+    .WithOpenApi()
+    .Produces<GoogleUserInfo>(StatusCodes.Status200OK, "application/json")
+    .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+    .ProducesProblem(StatusCodes.Status401Unauthorized)
+    .ProducesProblem(StatusCodes.Status500InternalServerError);
 
-
-var microsoftAuthGroup = app.MapGroup("/api/auth/microsoft").WithTags("Authentication");
 
 // Endpoint to start the Microsoft OAuth flow
 microsoftAuthGroup.MapGet("/login", async Task<IResult> (
@@ -652,7 +640,6 @@ microsoftAuthGroup.MapGet("/callback", async Task<IResult> (
         MicrosoftAuthService microsoftAuthService,
         IJwtTokenService jwtService) =>
     {
-        // Get the authorization code from the query string
         var code = request.Query["code"].ToString();
 
         if (string.IsNullOrEmpty(code))
@@ -662,13 +649,16 @@ microsoftAuthGroup.MapGet("/callback", async Task<IResult> (
 
         try
         {
-            // Exchange the authorization code for Microsoft user information
-            var microsoftUser = await microsoftAuthService.HandleMicrosoftCallback(code);
+            var (microsoftUser, photoUrl) = await microsoftAuthService.HandleMicrosoftCallback(code);
 
-            // Generate your application's JWT
-            var token = jwtService.GenerateToken(microsoftUser.Name, microsoftUser.Email, microsoftUser.Id, "microsoft");
+            var token = jwtService.GenerateToken(
+                microsoftUser.Name,
+                microsoftUser.Email,
+                microsoftUser.Id,
+                "microsoft",
+                photoUrl // Microsoft photo URL from Graph API
+            );
 
-            // Return the user information and token
             return TypedResults.Ok(new
             {
                 token,
@@ -677,6 +667,7 @@ microsoftAuthGroup.MapGet("/callback", async Task<IResult> (
                     id = microsoftUser.Id,
                     email = microsoftUser.Email,
                     name = microsoftUser.Name,
+                    picture = photoUrl,
                     givenName = microsoftUser.GivenName,
                     surname = microsoftUser.Surname,
                     jobTitle = microsoftUser.JobTitle,
@@ -701,229 +692,3 @@ microsoftAuthGroup.MapGet("/callback", async Task<IResult> (
     .ProducesProblem(StatusCodes.Status500InternalServerError);
 
 app.Run();
-
-// Add this to your appsettings.json
-/*
-{
-  "Authentication": {
-    "Google": {
-      "ClientId": "your-client-id",
-      "ClientSecret": "your-client-secret",
-      "RedirectUri": "https://your-frontend-url/auth/callback"
-    }
-  }
-}
-*/
-
-
-// // Endpoints
-// var apiGroup = app.MapGroup("/api");
-// var jokeGroup = apiGroup.MapGroup("/jokes").WithTags("Jokes");
-// var userGroup = apiGroup.MapGroup("/user").WithTags("User");
-// // Get All Jokes
-// jokeGroup.MapGet("/", async Task<IResult> (JokeService jokeService, HttpContext context, CancellationToken ct) =>
-//     {
-//         var jokes = await jokeService.GetJokes(ct);
-//         return jokes is not null && jokes.Count != 0
-//             ? TypedResults.Ok(Mapper.JokesToJokeReponses(jokes))
-//             : ProblemDetailsHelper.CreateNotFoundProblem(context, "Jokes", "all");
-//     })
-//     .WithName("GetJokes")
-//     .WithDescription("Retrieves all jokes from the database with pagination")
-//     .WithSummary("Get all jokes")
-//     .WithOpenApi()
-//     .Produces<List<JokeResponse>>(StatusCodes.Status200OK)
-//     .ProducesProblem(StatusCodes.Status404NotFound)
-//     .ProducesProblem(StatusCodes.Status401Unauthorized)
-//     .RequireAuthorization();
-//
-// // Get Joke by ID
-// jokeGroup.MapGet("/{id:guid}", async Task<IResult> ([FromRoute] Guid id, JokeService jokeService, HttpContext context, CancellationToken ct) =>
-//     {
-//         var joke = await jokeService.GetJokeById(id, ct);
-//         return joke is not null 
-//             ? TypedResults.Ok(Mapper.JokeToJokeResponse(joke))
-//             : ProblemDetailsHelper.CreateNotFoundProblem(context, "Joke", id.ToString());
-//     })
-//     .WithName("GetJokeById")
-//     .WithDescription("Retrieves a specific joke by its unique identifier")
-//     .WithSummary("Get a joke by ID")
-//     .WithOpenApi()
-//     .Produces<JokeResponse>(StatusCodes.Status200OK)
-//     .ProducesProblem(StatusCodes.Status404NotFound)
-//     .ProducesValidationProblem(StatusCodes.Status400BadRequest);
-//
-// // Create New Joke
-// jokeGroup.MapPost("/", async Task<IResult> (CreateJokeRequest request, JokeService jokeService, HttpContext context, CancellationToken ct) =>
-//     {
-//         var joke = Mapper.CreateRequestToJoke(request);
-//         var created = await jokeService.CreateJoke(joke, ct);
-//         var response = Mapper.JokeToJokeResponse(created);
-//         return response is not null 
-//             ? TypedResults.Created($"/api/jokes/{created.Id}", response)
-//             : ProblemDetailsHelper.CreateUnprocessableEntityProblem(context, "Failed to create joke with the provided data");
-//     })
-//     .WithName("CreateJoke")
-//     .WithDescription("Creates a new joke with the provided content and metadata")
-//     .WithSummary("Create a new joke")
-//     .WithOpenApi()
-//     .Accepts<CreateJokeRequest>("application/json")
-//     .Produces<JokeResponse>(StatusCodes.Status201Created)
-//     .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
-//     .ProducesValidationProblem(StatusCodes.Status400BadRequest)
-//     .AddEndpointFilter<ValidationFilter<CreateJokeRequest>>();
-//
-// // Get Jokes by Type
-// jokeGroup.MapGet("/type", async Task<IResult> ([AsParameters] FilterRequest request, JokeService jokeService, HttpContext context, CancellationToken ct) =>
-//     {
-//         var jokes = await jokeService.GetJokesByType(request, ct);
-//         return jokes.Count != 0
-//             ? TypedResults.Ok(Mapper.JokesToJokeReponses(jokes))
-//             : ProblemDetailsHelper.CreateNotFoundProblem(context, "Jokes", $"type {request.Type}");
-//     })
-//     .WithName("GetJokesByType")
-//     .WithDescription("Retrieves jokes filtered by type with optional sorting and pagination")
-//     .WithSummary("Get jokes by type")
-//     .WithOpenApi()
-//     .Produces<List<JokeResponse>>(StatusCodes.Status200OK)
-//     .ProducesProblem(StatusCodes.Status404NotFound)
-//     .ProducesValidationProblem(StatusCodes.Status400BadRequest)
-//     .AddEndpointFilter<ValidationFilter<FilterRequest>>();
-//
-// // Update Joke
-// jokeGroup.MapPut("/{id:guid}", async Task<IResult> ([FromRoute] Guid id, UpdateJokeRequest request, JokeService jokeService, HttpContext context, CancellationToken ct) =>
-//     {
-//         var joke = Mapper.UpdateRequestToJoke(id, request);
-//         var updated = await jokeService.UpdateJoke(joke, ct);
-//         return updated is not null
-//             ? TypedResults.Ok(Mapper.JokeToJokeResponse(updated))
-//             : ProblemDetailsHelper.CreateNotFoundProblem(context, "Joke", id.ToString());
-//     })
-//     .WithName("UpdateJoke")
-//     .WithDescription("Updates an existing joke's content and metadata")
-//     .WithSummary("Update a joke")
-//     .WithOpenApi()
-//     .Accepts<UpdateJokeRequest>("application/json")
-//     .Produces<JokeResponse>(StatusCodes.Status200OK)
-//     .ProducesProblem(StatusCodes.Status404NotFound)
-//     .ProducesValidationProblem(StatusCodes.Status400BadRequest)
-//     .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
-//     .AddEndpointFilter<ValidationFilter<UpdateJokeRequest>>();
-//
-// // Delete Joke
-// jokeGroup.MapDelete("/{id:guid}", async Task<IResult> ([FromRoute] Guid id, JokeService jokeService, HttpContext context, CancellationToken ct) =>
-//     {
-//         var result = await jokeService.DeleteJoke(id, ct);
-//         return result
-//             ? TypedResults.NoContent()
-//             : ProblemDetailsHelper.CreateNotFoundProblem(context, "Joke", id.ToString());
-//     })
-//     .WithName("DeleteJoke")
-//     .WithDescription("Permanently removes a joke from the database")
-//     .WithSummary("Delete a joke")
-//     .WithOpenApi()
-//     .Produces(StatusCodes.Status204NoContent)
-//     .ProducesProblem(StatusCodes.Status404NotFound)
-//     .ProducesValidationProblem(StatusCodes.Status400BadRequest);
-//
-// // Get Random Joke
-// jokeGroup.MapGet("/random", async Task<IResult> (JokeService jokeService, HttpContext context, CancellationToken ct) =>
-//     {
-//         var joke = await jokeService.GetRandomJoke(ct);
-//         return joke is not null
-//             ? TypedResults.Ok(Mapper.JokeToJokeResponse(joke))
-//             : ProblemDetailsHelper.CreateNotFoundProblem(context, "Jokes", "random");
-//     })
-//     .WithName("GetRandomJoke")
-//     .WithDescription("Retrieves a random joke from the available collection")
-//     .WithSummary("Get a random joke")
-//     .WithOpenApi()
-//     .Produces<JokeResponse>(StatusCodes.Status200OK)
-//     .ProducesProblem(StatusCodes.Status404NotFound);
-//
-// // Search Jokes
-// jokeGroup.MapGet("/search", async Task<IResult> (
-//     [FromQuery(Name = "q")] string query,
-//     JokeService jokeService,
-//     HttpContext context,
-//     CancellationToken ct) =>
-//     {
-//         if (string.IsNullOrWhiteSpace(query))
-//         {
-//             return ProblemDetailsHelper.CreateBadRequestProblem(context, "Search query cannot be empty");
-//         }
-//
-//         var jokes = await jokeService.SearchJokes(query, ct);
-//         return jokes?.Count > 0
-//             ? TypedResults.Ok(Mapper.JokesToJokeReponses(jokes))
-//             : ProblemDetailsHelper.CreateNotFoundProblem(context, "Jokes", $"matching query '{query}'");
-//     })
-//     .WithName("SearchJokes")
-//     .WithDescription("Searches for jokes containing the specified query in their content or tags")
-//     .WithSummary("Search for jokes")
-//     .WithOpenApi()
-//     .Produces<List<JokeResponse>>(StatusCodes.Status200OK)
-//     .ProducesProblem(StatusCodes.Status404NotFound)
-//     .ProducesValidationProblem(StatusCodes.Status400BadRequest);
-//
-// // Get External Joke
-// jokeGroup.MapGet("/whatever", async Task<IResult> (JokeApiService jokeApiService, HttpContext context, CancellationToken ct) =>
-//     {
-//         try
-//         {
-//             var joke = await jokeApiService.GetExternalJoke(ct);
-//             return joke is not null
-//                 ? TypedResults.Ok(joke)
-//                 : ProblemDetailsHelper.CreateNotFoundProblem(context, "External Joke", "random");
-//         }
-//         catch (HttpRequestException ex)
-//         {
-//             return ProblemDetailsHelper.CreateExternalServiceProblem(context, "Joke API", "Failed to fetch joke from external service", ex);
-//         }
-//     })
-//     .WithName("GetWhateverJoke")
-//     .WithDescription("Retrieves a random joke from a third-party API")
-//     .WithSummary("Get a joke from a third-party API")
-//     .WithOpenApi()
-//     .Produces<Joke>(StatusCodes.Status200OK)
-//     .ProducesProblem(StatusCodes.Status404NotFound)
-//     .ProducesProblem(StatusCodes.Status502BadGateway);
-//
-// // User Login
-// userGroup.MapPost("/login", async Task<IResult> ([FromBody] UserLoginRequest request, IJwtTokenService jwtTokenService, HttpContext context) =>
-//     {
-//         var jwtToken = jwtTokenService.GenerateToken(request.Username, request.Email);
-//         return !string.IsNullOrEmpty(jwtToken)
-//             ? TypedResults.Ok(new { request.Username, Token = jwtToken })
-//             : ProblemDetailsHelper.CreateUnauthorizedProblem(context, "Invalid credentials provided");
-//     })
-//     .WithName("UserLogin")
-//     .WithDescription("Authenticates a user and returns a JWT token for subsequent requests")
-//     .WithSummary("Login user")
-//     .WithOpenApi()
-//     .Accepts<UserLoginRequest>("application/json")
-//     .Produces<object>(StatusCodes.Status200OK)
-//     .ProducesProblem(StatusCodes.Status401Unauthorized)
-//     .ProducesValidationProblem(StatusCodes.Status400BadRequest)
-//     .AddEndpointFilter<ValidationFilter<UserLoginRequest>>();
-//
-// // User Logout
-// userGroup.MapPost("/logout", async Task<IResult> ([FromServices] IJwtTokenService jwtTokenService, HttpContext context) =>
-//     {
-//         var token = jwtTokenService.GetToken();
-//         if (string.IsNullOrEmpty(token))
-//         {
-//             return ProblemDetailsHelper.CreateUnauthorizedProblem(context, "No valid authentication token found");
-//         }
-//
-//         jwtTokenService.InvalidateToken(token);
-//         return TypedResults.Ok();
-//     })
-//     .WithName("UserLogout")
-//     .WithDescription("Invalidates the current user's JWT token")
-//     .WithSummary("Logout user")
-//     .WithOpenApi()
-//     .Produces(StatusCodes.Status200OK)
-//     .ProducesProblem(StatusCodes.Status401Unauthorized);
-//
-// app.Run();
