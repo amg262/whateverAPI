@@ -36,6 +36,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddOptions<JwtOptions>().BindConfiguration(nameof(JwtOptions));
 
 builder.Services.AddOptions<GoogleOptions>().BindConfiguration(nameof(GoogleOptions));
+builder.Services.AddOptions<MicrosoftOptions>().BindConfiguration(nameof(MicrosoftOptions));
 //.ValidateDataAnnotations().ValidateOnStart();
 
 
@@ -44,6 +45,7 @@ builder.Services.AddScoped<JokeApiService>();
 builder.Services.AddScoped<JokeService>();
 builder.Services.AddScoped<TagService>();
 builder.Services.AddScoped<GoogleAuthService>();
+builder.Services.AddScoped<MicrosoftAuthService>();
 
 
 builder.Services.AddScoped(typeof(ValidationFilter<>));
@@ -53,14 +55,9 @@ builder.Services.AddProblemDetails(options =>
 {
     options.CustomizeProblemDetails = context =>
     {
-        context.ProblemDetails.Instance =
-            $"{context.HttpContext.Request.Method} {context.HttpContext.Request.Path}";
-
+        context.ProblemDetails.Instance = $"{context.HttpContext.Request.Method} {context.HttpContext.Request.Path}";
         context.ProblemDetails.Extensions.TryAdd("requestId", context.HttpContext.TraceIdentifier);
-        
         context.ProblemDetails.Extensions.TryAdd("timestamp", DateTimeOffset.UtcNow);
-
-
         Activity? activity = context.HttpContext.Features.Get<IHttpActivityFeature>()?.Activity;
         context.ProblemDetails.Extensions.TryAdd("traceId", activity?.Id);
     };
@@ -418,7 +415,7 @@ userGroup.MapPost("/login", async Task<IResult> (
         IJwtTokenService jwtTokenService,
         HttpContext context) =>
     {
-        var jwtToken = jwtTokenService.GenerateToken(request.Username, request.Email);
+        var jwtToken = jwtTokenService.GenerateToken(request.Username, request.Email, Guid.CreateVersion7().ToString(), "local");
         return !string.IsNullOrEmpty(jwtToken)
             ? TypedResults.Ok(new { request.Username, Token = jwtToken })
             : context.CreateUnauthorizedProblem("Invalid credentials provided");
@@ -603,10 +600,10 @@ authGroup.MapGet("/callback", async Task<IResult> (
             var googleUser = await googleAuthService.HandleGoogleCallback(code);
 
             // Generate your application's JWT
-            var token = jwtService.GenerateToken(googleUser.Name, googleUser.Email);
+            var token = jwtService.GenerateToken(googleUser.Name, googleUser.Email, googleUser.Id, "google");
 
             // Return the user information and token
-            return Results.Ok(new
+            return TypedResults.Ok(new
             {
                 token,
                 user = new
@@ -628,6 +625,80 @@ authGroup.MapGet("/callback", async Task<IResult> (
     })
     .WithName("GoogleCallback")
     .WithOpenApi();
+
+
+var microsoftAuthGroup = app.MapGroup("/api/auth/microsoft").WithTags("Authentication");
+
+// Endpoint to start the Microsoft OAuth flow
+microsoftAuthGroup.MapGet("/login", async Task<IResult> (
+        MicrosoftAuthService microsoftAuthService,
+        HttpResponse response) =>
+    {
+        // Generate the Microsoft OAuth URL for the initial authentication request
+        var authUrl = microsoftAuthService.GenerateMicrosoftOAuthUrl();
+        return TypedResults.Ok(authUrl);
+    })
+    .WithName("MicrosoftLogin")
+    .WithDescription("Initiates the Microsoft OAuth2 authentication flow by generating an authorization URL")
+    .WithSummary("Start Microsoft authentication")
+    .WithOpenApi()
+    .Produces<string>(StatusCodes.Status200OK, "application/json")
+    .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+    .ProducesProblem(StatusCodes.Status500InternalServerError);
+
+// Endpoint to handle the Microsoft OAuth callback
+microsoftAuthGroup.MapGet("/callback", async Task<IResult> (
+        HttpRequest request,
+        MicrosoftAuthService microsoftAuthService,
+        IJwtTokenService jwtService) =>
+    {
+        // Get the authorization code from the query string
+        var code = request.Query["code"].ToString();
+
+        if (string.IsNullOrEmpty(code))
+        {
+            return TypedResults.BadRequest("No authorization code provided");
+        }
+
+        try
+        {
+            // Exchange the authorization code for Microsoft user information
+            var microsoftUser = await microsoftAuthService.HandleMicrosoftCallback(code);
+
+            // Generate your application's JWT
+            var token = jwtService.GenerateToken(microsoftUser.Name, microsoftUser.Email, microsoftUser.Id, "microsoft");
+
+            // Return the user information and token
+            return TypedResults.Ok(new
+            {
+                token,
+                user = new
+                {
+                    id = microsoftUser.Id,
+                    email = microsoftUser.Email,
+                    name = microsoftUser.Name,
+                    givenName = microsoftUser.GivenName,
+                    surname = microsoftUser.Surname,
+                    jobTitle = microsoftUser.JobTitle,
+                    officeLocation = microsoftUser.OfficeLocation,
+                    preferredLanguage = microsoftUser.PreferredLanguage
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            return TypedResults.BadRequest(new { error = ex.Message });
+        }
+    })
+    .WithName("MicrosoftCallback")
+    .WithDescription(
+        "Handles the OAuth2 callback from Microsoft, exchanging the authorization code for user information and generating a JWT token")
+    .WithSummary("Complete Microsoft authentication")
+    .WithOpenApi()
+    .Produces<MicrosoftUserInfo>(StatusCodes.Status200OK, "application/json")
+    .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+    .ProducesProblem(StatusCodes.Status401Unauthorized)
+    .ProducesProblem(StatusCodes.Status500InternalServerError);
 
 app.Run();
 

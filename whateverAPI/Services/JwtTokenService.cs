@@ -31,7 +31,7 @@ public interface IJwtTokenService
     /// Generates a JWT token with claims including the user's IP address.
     /// </summary>
     /// <returns>A JWT token string.</returns>
-    string GenerateToken(string? name, string? username, bool saveCookie = true);
+    string GenerateToken(string? name, string? email, string? userId, string? provider, bool saveCookie = true);
 
     /// <summary>
     /// Validates the given JWT token.
@@ -167,7 +167,7 @@ public class JwtTokenService : IJwtTokenService
     /// Generates a JWT token with claims including the user's IP address.
     /// </summary>
     /// <returns>A JWT token string.</returns>
-    public string GenerateToken(string? name, string? username, bool saveCookie = true)
+    public string GenerateToken(string? name, string? email, string? userId, string? provider, bool saveCookie = true)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
@@ -179,10 +179,13 @@ public class JwtTokenService : IJwtTokenService
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Name, name ?? "Unknown"),
-            new(JwtRegisteredClaimNames.Sub, username ?? "Unknown"),
+            new(JwtRegisteredClaimNames.Sub, email ?? "Unknown"),
+            new(JwtRegisteredClaimNames.Email, email ?? "Unknown"),
             new(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()), // Unique identifier for the token
             new(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString(CultureInfo.CurrentCulture), ClaimValueTypes.Integer64),
-            new("ip", ip)
+            new("ip", ip),
+            new("uid", userId ?? "Unknown"),
+            new("provider", provider ?? "Unknown"),
         };
 
         // token descriptor with issuer, audience, expiration, signing credentials, and claims

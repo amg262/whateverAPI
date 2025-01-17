@@ -101,3 +101,41 @@ public record GoogleUserInfo
 
     [JsonPropertyName("birthdate")] public string? Birthdate { get; init; }
 }
+
+/// <summary>
+/// Represents the response from Microsoft's token endpoint.
+/// </summary>
+public record MicrosoftTokenResponse
+{
+    [JsonPropertyName("access_token")] public string AccessToken { get; init; } = "";
+
+    [JsonPropertyName("id_token")] public string IdToken { get; init; } = "";
+
+    [JsonPropertyName("refresh_token")] public string? RefreshToken { get; init; }
+
+    [JsonPropertyName("expires_in")] public int ExpiresIn { get; init; }
+}
+
+/// <summary>
+/// Represents user information retrieved from Microsoft Graph API.
+/// </summary>
+public record MicrosoftUserInfo
+{
+    [JsonPropertyName("id")] public string Id { get; init; } = "";
+
+    [JsonPropertyName("displayName")] public string Name { get; init; } = "";
+
+    [JsonPropertyName("userPrincipalName")]
+    public string Email { get; init; } = "";
+
+    [JsonPropertyName("givenName")] public string? GivenName { get; init; }
+
+    [JsonPropertyName("surname")] public string? Surname { get; init; }
+
+    [JsonPropertyName("jobTitle")] public string? JobTitle { get; init; }
+
+    [JsonPropertyName("officeLocation")] public string? OfficeLocation { get; init; }
+
+    [JsonPropertyName("preferredLanguage")]
+    public string? PreferredLanguage { get; init; }
+}
