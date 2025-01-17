@@ -136,8 +136,8 @@ if (app.Environment.IsDevelopment() || !app.Environment.IsDevelopment())
     });
 }
 
-app.UseExceptionHandler();
-app.UseStatusCodePages();
+// app.UseExceptionHandler();
+// app.UseStatusCodePages();
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
