@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -47,7 +49,22 @@ builder.Services.AddScoped<GoogleAuthService>();
 builder.Services.AddScoped(typeof(ValidationFilter<>));
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Instance =
+            $"{context.HttpContext.Request.Method} {context.HttpContext.Request.Path}";
+
+        context.ProblemDetails.Extensions.TryAdd("requestId", context.HttpContext.TraceIdentifier);
+        
+        context.ProblemDetails.Extensions.TryAdd("timestamp", DateTimeOffset.UtcNow);
+
+
+        Activity? activity = context.HttpContext.Features.Get<IHttpActivityFeature>()?.Activity;
+        context.ProblemDetails.Extensions.TryAdd("traceId", activity?.Id);
+    };
+});
 builder.Services.AddExceptionHandler<GlobalException>();
 
 
@@ -125,6 +142,9 @@ if (app.Environment.IsDevelopment() || !app.Environment.IsDevelopment())
         opts.Title = "Whatever bruh API";
     });
 }
+
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 
 // test again
 app.UseHttpsRedirection();

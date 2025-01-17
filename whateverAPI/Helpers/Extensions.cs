@@ -37,7 +37,7 @@ public static class ProblemDetailsExtensions
     {
         var problem = new ProblemDetails
         {
-            Instance = context.Request.Path
+            Instance = context.Request.Path,
         };
 
         return problem.WithContext(context);
@@ -54,10 +54,10 @@ public static class ProblemDetailsExtensions
         problem.Instance ??= context.Request.Path;
 
         // Add standard diagnostic information
-        problem.Extensions["traceId"] = Activity.Current?.Id ?? context.TraceIdentifier;
-        problem.Extensions["timestamp"] = DateTimeOffset.UtcNow;
-        problem.Extensions["requestMethod"] = context.Request.Method;
-        problem.Extensions["endpoint"] = context.Request.Path;
+        // problem.Extensions["traceId"] = Activity.Current?.Id ?? context.TraceIdentifier;
+        // problem.Extensions["timestamp"] = DateTimeOffset.UtcNow;
+        // problem.Extensions["requestMethod"] = context.Request.Method;
+        // problem.Extensions["endpoint"] = context.Request.Path;
 
         return problem;
     }
