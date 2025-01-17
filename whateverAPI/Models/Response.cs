@@ -16,6 +16,10 @@ public record JokeResponse
     public int? LaughScore { get; init; }
 
     public bool IsActive { get; init; }
+    
+    public string? UserId { get; init; }
+    
+    public User? User { get; init; }
 }
 
 public record TagResponse
@@ -76,6 +80,22 @@ public record GoogleTokenResponse
     [JsonPropertyName("id_token")] public string IdToken { get; init; } = "";
 
     [JsonPropertyName("refresh_token")] public string? RefreshToken { get; init; }
+    
+    [JsonPropertyName("expires_in")] public int ExpiresIn { get; init; }
+
+}
+
+
+public record TokenResponse
+{
+    [JsonPropertyName("access_token")] public string AccessToken { get; init; } = "";
+
+    [JsonPropertyName("id_token")] public string IdToken { get; init; } = "";
+
+    [JsonPropertyName("refresh_token")] public string? RefreshToken { get; init; }
+    
+    [JsonPropertyName("expires_in")] public int ExpiresIn { get; init; }
+
 }
 
 public record GoogleUserInfo
@@ -138,4 +158,7 @@ public record MicrosoftUserInfo
 
     [JsonPropertyName("preferredLanguage")]
     public string? PreferredLanguage { get; init; }
+    
+    [JsonPropertyName("picture")] public string? Picture { get; set; }
+
 }

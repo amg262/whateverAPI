@@ -31,7 +31,7 @@ public interface IJwtTokenService
     /// Generates a JWT token with claims including the user's IP address.
     /// </summary>
     /// <returns>A JWT token string.</returns>
-    string GenerateToken(string? name, string? email, string? userId, string? provider, string? imageUrl, bool saveCookie = true);
+    string GenerateToken(string? userId, string? email, string? name, string? provider, bool saveCookie = true);
 
     /// <summary>
     /// Validates the given JWT token.
@@ -167,7 +167,7 @@ public class JwtTokenService : IJwtTokenService
     /// Generates a JWT token with claims including the user's IP address.
     /// </summary>
     /// <returns>A JWT token string.</returns>
-    public string GenerateToken(string? name, string? email, string? userId, string? provider, string? imageUrl, bool saveCookie = true)
+    public string GenerateToken(string? userId, string? name, string? email, string? provider, bool saveCookie = true)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
@@ -178,20 +178,15 @@ public class JwtTokenService : IJwtTokenService
 
         var claims = new List<Claim>
         {
+            new(JwtRegisteredClaimNames.Sub, userId ?? throw new ArgumentNullException(nameof(userId))),
             new(JwtRegisteredClaimNames.Name, name ?? "Unknown"),
-            new(JwtRegisteredClaimNames.Sub, email ?? "Unknown"),
-            new(JwtRegisteredClaimNames.Email, email ?? "Unknown"),
-            new(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()), // Unique identifier for the token
+            new(JwtRegisteredClaimNames.Email, email?.ToLower() ?? "Unknown"),
+            new(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
             new(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString(CultureInfo.CurrentCulture), ClaimValueTypes.Integer64),
             new("ip", ip),
-            new("uid", userId ?? "Unknown"),
-            new("provider", provider ?? "Unknown"),
+            // new("uid", userId ?? "Unknown"),
+            // new("provider", provider ?? "Unknown"),
         };
-        
-        if (!string.IsNullOrEmpty(imageUrl))
-        {
-            claims.Add(new Claim("picture", imageUrl));
-        }
 
         // token descriptor with issuer, audience, expiration, signing credentials, and claims
         var tokenDescriptor = new SecurityTokenDescriptor

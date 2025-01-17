@@ -11,4 +11,7 @@ public static class Helper
         "mlwIjoiOjoxIiwibmJmIjoxNzM2NDU4MTk5LCJleHAiOjI1MzQwMjMwMDgwMCwiaXNzIjoiY3Jpc2lzLXByZXZlbnRp" +
         "b24taW5zdGl0dXRlIiwiYXVkIjoiY3BpLXN3ZS1kZXYifQ.tjhEbPrUWBh3d47lk9_FN3owIiQUL_7SA6O05P5Yy7E";
     
+    public const string MicrosoftProvider = "microsoft";
+    public const string GoogleProvider = "google";
+    
 }

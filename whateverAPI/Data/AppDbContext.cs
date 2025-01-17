@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     
     public DbSet<Joke> Jokes { get; set; }
     public DbSet<Tag> Tags { get; set; }
+    public DbSet<User> Users { get; set; }
     // public DbSet<JokeTag> JokeTags { get; set; }
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -139,6 +139,7 @@ public class JokeService //: IJokeService
 
             return await _db.Jokes
                 .Include(j => j.Tags)
+                .Include(j => j.User)
                 .AsNoTracking()
                 .FirstAsync(j => j.Id == joke.Id, ct);
         }
@@ -421,7 +422,7 @@ public class JokeService //: IJokeService
                 _logger.LogInformation("Joke with ID {JokeId} not found", joke.Id);
                 return null;
             }
-            
+
             existingJoke.MapObject<Joke>(joke);
 
             if (joke.Tags?.Count > 0)

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using whateverAPI.Data;
@@ -11,9 +12,11 @@ using whateverAPI.Data;
 namespace whateverAPI.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250117192354_AddUser")]
+    partial class AddUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -150,11 +153,9 @@ namespace whateverAPI.Data.Migrations
 
             modelBuilder.Entity("whateverAPI.Entities.Joke", b =>
                 {
-                    b.HasOne("whateverAPI.Entities.User", "User")
+                    b.HasOne("whateverAPI.Entities.User", null)
                         .WithMany("Jokes")
                         .HasForeignKey("UserId");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("whateverAPI.Entities.User", b =>

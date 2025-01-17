@@ -35,6 +35,10 @@ public class Joke : IEntity<Guid>
     public List<Tag>? Tags { get; set; } = [];
     public int? LaughScore { get; set; }
 
+    public Guid? UserId { get; set; }
+
+    [ForeignKey(nameof(UserId))] public User? User { get; set; }
+
     public bool IsActive { get; set; } = true;
 
     /// <summary>
@@ -78,7 +82,7 @@ public class Joke : IEntity<Guid>
     /// - Default value initialization
     /// - Active status setting
     /// </remarks>
-    public static Joke FromCreateRequest(CreateJokeRequest request)
+    public static Joke FromCreateRequest(CreateJokeRequest request, User? user)
     {
         return new Joke
         {
@@ -95,7 +99,9 @@ public class Joke : IEntity<Guid>
                     Name = tagName.ToLower().Trim(),
                 }).ToList() ?? [],
             LaughScore = request.LaughScore,
-            IsActive = true
+            IsActive = true,
+            User = user,
+            UserId = user?.Id
         };
     }
 
@@ -113,25 +119,23 @@ public class Joke : IEntity<Guid>
     /// - Handles tag updates properly
     /// - Maintains data consistency
     /// </remarks>
-    public static Joke FromUpdateRequest(Guid id, UpdateJokeRequest request)
+    public static Joke FromUpdateRequest(Guid id, UpdateJokeRequest request) => new()
     {
-        return new Joke
-        {
-            Id = id,
-            Content = request.Content,
-            ModifiedAt = DateTime.UtcNow,
-            Type = request.Type,
-            Tags = request.Tags?.Select(tagName =>
-                new Tag
-                {
-                    // We don't want to assign any kind of timestamps of GUIDs here because the TagService will handle that
-                    // during joke updating
-                    Name = tagName.ToLower().Trim()
-                }).ToList() ?? [],
-            LaughScore = request.LaughScore,
-            IsActive = request.IsActive
-        };
-    }
+        Id = id,
+        Content = request.Content,
+        ModifiedAt = DateTime.UtcNow,
+        Type = request.Type,
+        Tags = request.Tags?.Select(tagName =>
+            new Tag
+            {
+                // We don't want to assign any kind of timestamps of GUIDs here because the TagService will handle that
+                // during joke updating
+                Name = tagName.ToLower().Trim()
+            }).ToList() ?? [],
+        LaughScore = request.LaughScore,
+        IsActive = request.IsActive
+    };
+
 
     /// <summary>
     /// Creates a joke entity from an external API response, implementing proper
@@ -146,30 +150,28 @@ public class Joke : IEntity<Guid>
     /// - Proper timestamp initialization
     /// - Default score setting
     /// </remarks>
-    public static Joke FromJokeApiResponse(JokeApiResponse response)
+    public static Joke FromJokeApiResponse(JokeApiResponse response) => new()
     {
-        return new Joke
-        {
-            Id = Guid.CreateVersion7(),
-            Content = response.Type.Equals("single",
-                StringComparison.CurrentCultureIgnoreCase)
-                ? response.Joke
-                : $"{response.Setup}\n{response.Delivery}",
-            Type = JokeType.ThirdParty,
-            CreatedAt = DateTime.UtcNow,
-            ModifiedAt = DateTime.UtcNow,
-            Tags =
-            [
-                new Tag
-                {
-                    // Id = Guid.CreateVersion7(),
-                    Name = response.Category.ToLower().Trim()
-                }
-            ],
-            LaughScore = 0,
-            IsActive = true
-        };
-    }
+        Id = Guid.CreateVersion7(),
+        Content = response.Type.Equals("single",
+            StringComparison.CurrentCultureIgnoreCase)
+            ? response.Joke
+            : $"{response.Setup}\n{response.Delivery}",
+        Type = JokeType.ThirdParty,
+        CreatedAt = DateTime.UtcNow,
+        ModifiedAt = DateTime.UtcNow,
+        Tags =
+        [
+            new Tag
+            {
+                // Id = Guid.CreateVersion7(),
+                Name = response.Category.ToLower().Trim()
+            }
+        ],
+        LaughScore = 0,
+        IsActive = true
+    };
+
 
     /// <summary>
     /// Converts the current joke entity to its API response representation,
@@ -183,23 +185,23 @@ public class Joke : IEntity<Guid>
     /// - Proper data formatting for API consumers
     /// - Complete entity projection
     /// </remarks>
-    private JokeResponse ToResponse()
+    private JokeResponse ToResponse() => new()
     {
-        return new JokeResponse
-        {
-            Id = Id,
-            Content = Content,
-            Type = Type,
-            Tags = Tags?
-                .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
-                .Select(t => t.Name)
-                .ToList() ?? [],
-            CreatedAt = CreatedAt,
-            ModifiedAt = ModifiedAt,
-            LaughScore = LaughScore,
-            IsActive = IsActive
-        };
-    }
+        Id = Id,
+        Content = Content,
+        Type = Type,
+        Tags = Tags?
+            .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(t => t.Name)
+            .ToList() ?? [],
+        CreatedAt = CreatedAt,
+        ModifiedAt = ModifiedAt,
+        LaughScore = LaughScore,
+        IsActive = IsActive,
+        UserId = User?.Id.ToString(),
+        //User = User
+    };
+
 
     /// <summary>
     /// Provides a null-safe way to convert a potentially null joke entity
@@ -214,7 +216,7 @@ public class Joke : IEntity<Guid>
     /// - Consistent null propagation
     /// </remarks>
     public static JokeResponse? ToResponse(Joke? joke) => joke?.ToResponse();
-    
+
     /// <summary>
     /// Updates an existing joke's properties with values from a new joke, preserving
     /// existing values when new values are null.
@@ -229,7 +231,7 @@ public class Joke : IEntity<Guid>
         if (newJoke.LaughScore != null) existingJoke.LaughScore = newJoke.LaughScore;
         existingJoke.IsActive = newJoke.IsActive;
     }
-    
+
     /// <summary>
     /// Updates an existing joke's properties with values from a new joke, preserving
     /// existing values when new values are null.
@@ -245,5 +247,4 @@ public class Joke : IEntity<Guid>
         existingJoke.IsActive = newJoke.IsActive;
         return existingJoke;
     }
-    
 }

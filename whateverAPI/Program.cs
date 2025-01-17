@@ -1,5 +1,5 @@
-using System.Diagnostics;
 using System.Net.Http.Headers;
+using System.Security.Claims;
 using System.Text;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -15,7 +15,6 @@ using whateverAPI.Models;
 using whateverAPI.Options;
 using whateverAPI.Services;
 
-// not sure why fail
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration
     .SetBasePath(builder.Environment.ContentRootPath)
@@ -29,28 +28,6 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         .EnableDetailedErrors()
         .EnableSensitiveDataLogging());
 
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddControllers();
-builder.Services.AddOpenApi();
-
-builder.Services.AddOptions<JwtOptions>().BindConfiguration(nameof(JwtOptions));
-
-builder.Services.AddOptions<GoogleOptions>().BindConfiguration(nameof(GoogleOptions));
-builder.Services.AddOptions<MicrosoftOptions>().BindConfiguration(nameof(MicrosoftOptions));
-//.ValidateDataAnnotations().ValidateOnStart();
-
-
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-builder.Services.AddScoped<JokeApiService>();
-builder.Services.AddScoped<JokeService>();
-builder.Services.AddScoped<TagService>();
-builder.Services.AddScoped<GoogleAuthService>();
-builder.Services.AddScoped<MicrosoftAuthService>();
-
-
-builder.Services.AddScoped(typeof(ValidationFilter<>));
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-
 builder.Services.AddProblemDetails(options =>
 {
     options.CustomizeProblemDetails = context =>
@@ -58,37 +35,10 @@ builder.Services.AddProblemDetails(options =>
         context.ProblemDetails.Instance = $"{context.HttpContext.Request.Method} {context.HttpContext.Request.Path}";
         context.ProblemDetails.Extensions.TryAdd("requestId", context.HttpContext.TraceIdentifier);
         context.ProblemDetails.Extensions.TryAdd("timestamp", DateTimeOffset.UtcNow);
-        Activity? activity = context.HttpContext.Features.Get<IHttpActivityFeature>()?.Activity;
+        var activity = context.HttpContext.Features.Get<IHttpActivityFeature>()?.Activity;
         context.ProblemDetails.Extensions.TryAdd("traceId", activity?.Id);
     };
 });
-builder.Services.AddExceptionHandler<GlobalException>();
-
-
-// Add memory cache for state parameter
-
-
-builder.Services.AddHttpClient<GoogleAuthService>().AddStandardResilienceHandler();
-
-
-builder.Services.AddHttpClient<JokeApiService>(client =>
-{
-    client.DefaultRequestHeaders.Clear();
-    client.BaseAddress = new Uri(builder.Configuration["JokeApiOptions:BaseUrl"] ?? string.Empty);
-    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-}).AddStandardResilienceHandler();
-
-// builder.Services.AddCors(options =>
-// {
-//     options.AddPolicy(Helper.CorsPolicy, policyBuilder =>
-//     {
-//         policyBuilder
-//             .WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
-//             .WithMethods(builder.Configuration.GetSection("Cors:AllowedMethods").Get<string[]>() ?? [])
-//             .WithHeaders(builder.Configuration.GetSection("Cors:AllowedHeaders").Get<string[]>() ?? [])
-//             .AllowCredentials();
-//     });
-// });
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -103,7 +53,9 @@ builder.Services
             ValidIssuer = builder.Configuration["JwtOptions:Issuer"],
             ValidAudience = builder.Configuration["JwtOptions:Audience"],
             IssuerSigningKey =
-                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtOptions:Secret"] ?? string.Empty))
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtOptions:Secret"] ?? string.Empty)),
+            ValidateActor = true,
+            RequireSignedTokens = true,
         };
 
         options.Events = new JwtBearerEvents
@@ -116,6 +68,48 @@ builder.Services
             }
         };
     }).Services.AddAuthorization();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddControllers();
+builder.Services.AddOpenApi();
+
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddExceptionHandler<GlobalException>();
+
+builder.Services.AddOptions<JwtOptions>().BindConfiguration(nameof(JwtOptions));
+builder.Services.AddOptions<GoogleOptions>().BindConfiguration(nameof(GoogleOptions));
+builder.Services.AddOptions<MicrosoftOptions>().BindConfiguration(nameof(MicrosoftOptions));
+
+builder.Services.AddScoped(typeof(ValidationFilter<>));
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+builder.Services.AddScoped<IMicrosoftAuthService, MicrosoftAuthService>();
+
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<JokeService>();
+builder.Services.AddScoped<TagService>();
+builder.Services.AddScoped<JokeApiService>();
+
+builder.Services.AddHttpClient<GoogleAuthService>().AddStandardResilienceHandler();
+builder.Services.AddHttpClient<MicrosoftAuthService>().AddStandardResilienceHandler();
+builder.Services.AddHttpClient<JokeApiService>(client =>
+{
+    client.DefaultRequestHeaders.Clear();
+    client.BaseAddress = new Uri(builder.Configuration["JokeApiOptions:BaseUrl"] ?? string.Empty);
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+}).AddStandardResilienceHandler();
+
+
+// builder.Services.AddCors(options =>
+// {
+//     options.AddPolicy(Helper.CorsPolicy, policyBuilder =>
+//     {
+//         policyBuilder
+//             .WithOrigins(builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
+//             .WithMethods(builder.Configuration.GetSection("Cors:AllowedMethods").Get<string[]>() ?? [])
+//             .WithHeaders(builder.Configuration.GetSection("Cors:AllowedHeaders").Get<string[]>() ?? [])
+//             .AllowCredentials();
+//     });
+// });
 
 
 var app = builder.Build();
@@ -143,7 +137,6 @@ if (app.Environment.IsDevelopment() || !app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-// test again
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAuthentication().UseAuthorization();
@@ -168,7 +161,7 @@ jokeGroup.MapGet("/", async Task<IResult> (
         return jokes is not null && jokes.Count != 0
             // ? TypedResults.Ok(Mapper.JokesToJokeReponses(jokes))
             ? TypedResults.Ok(Joke.ToJokeResponses(jokes))
-            : context.CreateNotFoundProblem("Jokes", "all");
+            : context.CreateNotFoundProblem(nameof(Joke), "all");
     })
     .WithName("GetJokes")
     .WithDescription("Retrieves all jokes from the database with pagination")
@@ -188,9 +181,9 @@ jokeGroup.MapGet("/{id:guid}", async Task<IResult> (
     {
         var joke = await jokeService.GetJokeById(id, ct);
         return joke is not null
-            ? TypedResults.Ok<JokeResponse>(Joke.ToResponse(joke))
+            ? TypedResults.Ok(Joke.ToResponse(joke))
             // ? TypedResults.Ok(Mapper.JokeToJokeResponse(joke))
-            : context.CreateNotFoundProblem("Joke", id.ToString());
+            : context.CreateNotFoundProblem(nameof(Joke), id.ToString());
     })
     .WithName("GetJokeById")
     .WithDescription("Retrieves a specific joke by its unique identifier")
@@ -205,16 +198,25 @@ jokeGroup.MapPost("/", async Task<IResult> (
         CreateJokeRequest request,
         JokeService jokeService,
         HttpContext context,
+        UserService userService,
         CancellationToken ct) =>
     {
-        var joke = Joke.FromCreateRequest(request);
+        var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        User? user = null;
+
+        if (userId != null && Guid.TryParse(userId, out var userGuid))
+        {
+            user = await userService.GetUserById(userGuid, ct);
+        }
+
+        var joke = Joke.FromCreateRequest(request, user);
         // var joke = Mapper.CreateRequestToJoke(request);
         var created = await jokeService.CreateJoke(joke, ct);
         var response = Joke.ToResponse(created);
         // var response = JokeResponse.FromJoke(created);
         // var response = Mapper.JokeToJokeResponse(created);
         return response is not null
-            ? TypedResults.Created<JokeResponse>($"/api/jokes/{created.Id}", response)
+            ? TypedResults.Created($"/api/jokes/{created.Id}", response)
             : context.CreateUnprocessableEntityProblem("Create Joke");
     })
     .WithName("CreateJoke")
@@ -225,7 +227,8 @@ jokeGroup.MapPost("/", async Task<IResult> (
     .Produces<JokeResponse>(StatusCodes.Status201Created)
     .ProducesValidationProblem(StatusCodes.Status422UnprocessableEntity)
     .ProducesValidationProblem(StatusCodes.Status400BadRequest)
-    .AddEndpointFilter<ValidationFilter<CreateJokeRequest>>();
+    .AddEndpointFilter<ValidationFilter<CreateJokeRequest>>()
+    .RequireAuthorization();
 
 // Update Joke
 jokeGroup.MapPut("/{id:guid}", async Task<IResult> (
@@ -241,7 +244,7 @@ jokeGroup.MapPut("/{id:guid}", async Task<IResult> (
         return updated is not null
             ? TypedResults.Ok(Joke.ToResponse(updated))
             // ? TypedResults.Ok(Mapper.JokeToJokeResponse(updated))
-            : context.CreateNotFoundProblem("Joke", id.ToString());
+            : context.CreateNotFoundProblem(nameof(Joke), id.ToString());
     })
     .WithName("UpdateJoke")
     .WithDescription("Updates an existing joke's content and metadata")
@@ -264,7 +267,7 @@ jokeGroup.MapDelete("/{id:guid}", async Task<IResult> (
         var result = await jokeService.DeleteJoke(id, ct);
         return result
             ? TypedResults.NoContent()
-            : context.CreateNotFoundProblem("Joke", id.ToString());
+            : context.CreateNotFoundProblem(nameof(Joke), id.ToString());
     })
     .WithName("DeleteJoke")
     .WithDescription("Permanently removes a joke from the database")
@@ -284,7 +287,7 @@ jokeGroup.MapGet("/random", async Task<IResult> (
         return joke is not null
             ? TypedResults.Ok(Joke.ToResponse(joke))
             // ? TypedResults.Ok(Mapper.JokeToJokeResponse(joke))
-            : context.CreateNotFoundProblem("Jokes", "random");
+            : context.CreateNotFoundProblem(nameof(Joke), "random");
     })
     .WithName("GetRandomJoke")
     .WithDescription("Retrieves a random joke from the available collection")
@@ -302,7 +305,7 @@ jokeGroup.MapGet("/klump", async Task<IResult> (
         return joke is not null
             ? TypedResults.Ok(joke.Content.Replace("\n", " "))
             // ? TypedResults.Ok(Mapper.JokeToJokeResponse(joke))
-            : context.CreateNotFoundProblem("Jokes", "klump");
+            : context.CreateNotFoundProblem(nameof(Joke), "klump");
     })
     .WithName("Klump")
     .WithDescription("Klump")
@@ -327,7 +330,7 @@ jokeGroup.MapGet("/search", async Task<IResult> (
         return jokes?.Count > 0
             ? TypedResults.Ok(Joke.ToJokeResponses(jokes))
             // ? TypedResults.Ok(Mapper.JokesToJokeReponses(jokes))
-            : context.CreateNotFoundProblem("Jokes", $"matching query '{query}'");
+            : context.CreateNotFoundProblem(nameof(Joke), $"matching query '{query}'");
     })
     .WithName("SearchJokes")
     .WithDescription("Searches for jokes containing the specified query in their content or tags")
@@ -347,7 +350,7 @@ jokeGroup.MapPost("/find", async Task<IResult> (
         var jokes = await jokeService.SearchAndFilter(request, ct);
         return jokes.Count != 0
             ? TypedResults.Ok(Joke.ToJokeResponses(jokes))
-            : context.CreateNotFoundProblem("Jokes",
+            : context.CreateNotFoundProblem(nameof(Joke),
                 $"matching criteria (Type={request.Type}, Query={request.Query ?? "none"})");
     })
     .WithName("SearchAndFilterJokes")
@@ -394,8 +397,7 @@ userGroup.MapPost("/login", async Task<IResult> (
         IJwtTokenService jwtTokenService,
         HttpContext context) =>
     {
-        var jwtToken = jwtTokenService.GenerateToken(request.Username, request.Email, Guid.CreateVersion7().ToString(), "local",
-            string.Empty);
+        var jwtToken = jwtTokenService.GenerateToken(request.Username, request.Email, Guid.CreateVersion7().ToString(), "local");
         return !string.IsNullOrEmpty(jwtToken)
             ? TypedResults.Ok(new { request.Username, Token = jwtToken })
             : context.CreateUnauthorizedProblem("Invalid credentials provided");
@@ -440,7 +442,7 @@ tagGroup.MapGet("/", async Task<IResult> (
         var tags = await tagService.GetAllTagsAsync(ct);
         return tags.Count != 0
             ? TypedResults.Ok(Tag.ToTagResponses(tags))
-            : context.CreateNotFoundProblem("Tags", "all");
+            : context.CreateNotFoundProblem(nameof(Tag), "all");
     })
     .WithName("GetTags")
     .WithDescription("Retrieves all tags")
@@ -460,7 +462,7 @@ tagGroup.MapGet("/{id:guid}", async Task<IResult> (
         var tag = await tagService.GetTagByIdAsync(id, ct);
         return tag is not null
             ? TypedResults.Ok(Tag.ToResponse(tag))
-            : context.CreateNotFoundProblem("Tag", id.ToString());
+            : context.CreateNotFoundProblem(nameof(Tag), id.ToString());
     })
     .WithName("GetTagById")
     .WithDescription("Retrieves a specific tag by its unique identifier")
@@ -479,7 +481,8 @@ tagGroup.MapPost("/", async Task<IResult> (
         try
         {
             var tag = await tagService.CreateTagAsync(request, ct);
-            return TypedResults.Created($"/api/tags/{tag.Id}", Tag.ToResponse(tag));
+
+            return TypedResults.Created($"/api/tags/{tag.Id}", Tag.ToResponse(tag) as object);
         }
         catch (InvalidOperationException ex)
         {
@@ -508,7 +511,7 @@ tagGroup.MapPut("/{id:guid}", async Task<IResult> (
             var tag = await tagService.UpdateTagAsync(id, request, ct);
             return tag is not null
                 ? TypedResults.Ok(Tag.ToResponse(tag))
-                : context.CreateNotFoundProblem("Tag", id.ToString());
+                : context.CreateNotFoundProblem(nameof(Tag), id.ToString());
         }
         catch (InvalidOperationException ex)
         {
@@ -535,7 +538,7 @@ tagGroup.MapDelete("/{id:guid}", async Task<IResult> (
         var result = await tagService.DeleteTagAsync(id, ct);
         return result
             ? TypedResults.NoContent()
-            : context.CreateNotFoundProblem("Tag", id.ToString());
+            : context.CreateNotFoundProblem(nameof(Tag), id.ToString());
     })
     .WithName("DeleteTag")
     .WithDescription("Deletes a tag")
@@ -545,16 +548,17 @@ tagGroup.MapDelete("/{id:guid}", async Task<IResult> (
     .ProducesProblem(StatusCodes.Status404NotFound);
 
 
-
-
 // Endpoint to start the OAuth flow
 googleAuthGroup.MapGet("/login", async Task<IResult> (
-        GoogleAuthService googleAuthService,
-        HttpResponse response) =>
+        IGoogleAuthService authService,
+        HttpResponse response,
+        HttpContext context) =>
     {
         // Generate the Google OAuth URL and redirect the user to it
-        var authUrl = googleAuthService.GenerateGoogleOAuthUrl();
-        return TypedResults.Ok(authUrl);
+        var authUrl = authService.GenerateOAuthUrl();
+        return !string.IsNullOrEmpty(authUrl)
+            ? TypedResults.Ok(authUrl)
+            : context.CreateNotFoundProblem("Google OAuth URL", string.Empty);
     })
     .WithName("GoogleLogin")
     .WithDescription("Initiates the Google OAuth2 authentication flow by generating an authorization URL")
@@ -567,39 +571,43 @@ googleAuthGroup.MapGet("/login", async Task<IResult> (
 // Endpoint to handle the OAuth callback
 googleAuthGroup.MapGet("/callback", async Task<IResult> (
         HttpRequest request,
-        GoogleAuthService googleAuthService,
-        IJwtTokenService jwtService) =>
+        IGoogleAuthService authService,
+        IJwtTokenService jwtService,
+        UserService userService,
+        HttpContext context,
+        CancellationToken ct) =>
     {
         // Get the authorization code from the query string
         var code = request.Query["code"].ToString();
 
         if (string.IsNullOrEmpty(code))
         {
+            return context.CreateNotFoundProblem("Authorization code", string.Empty);
             return TypedResults.BadRequest("No authorization code provided");
         }
 
         try
         {
             // Exchange the code for user information
-            var googleUser = await googleAuthService.HandleGoogleCallback(code);
+            var googleUser = await authService.HandleCallbackAsync<GoogleUserInfo>(code);
+
+            var newUser = OAuthUserInfo.FromUserInfoAsync(googleUser);
+
+            if (newUser == null)
+            {
+                return context.CreateBadRequestProblem("User account be created");
+            }
+
+            var user = await userService.GetOrCreateUserFromOAuthAsync(newUser, ct);
 
             // Generate your application's JWT
-            var token = jwtService.GenerateToken(googleUser.Name, googleUser.Email, googleUser.Id, "google", googleUser.Picture);
+            var token = jwtService.GenerateToken(user.Id.ToString(), user.Email, user.Name, Helper.GoogleProvider);
 
             // Return the user information and token
             return TypedResults.Ok(new
             {
                 token,
-                user = new
-                {
-                    id = googleUser.Id,
-                    email = googleUser.Email,
-                    name = googleUser.Name,
-                    picture = googleUser.Picture,
-                    locale = googleUser.Locale,
-                    familyName = googleUser.FamilyName,
-                    givenName = googleUser.GivenName,
-                }
+                user
             });
         }
         catch (Exception ex)
@@ -610,6 +618,7 @@ googleAuthGroup.MapGet("/callback", async Task<IResult> (
     .WithName("GoogleCallback")
     .WithDescription(
         "Handles the OAuth2 callback from Google, exchanging the authorization code for user information and generating a JWT token")
+    .WithSummary("Complete google authentication")
     .WithOpenApi()
     .Produces<GoogleUserInfo>(StatusCodes.Status200OK, "application/json")
     .ProducesValidationProblem(StatusCodes.Status400BadRequest)
@@ -619,12 +628,15 @@ googleAuthGroup.MapGet("/callback", async Task<IResult> (
 
 // Endpoint to start the Microsoft OAuth flow
 microsoftAuthGroup.MapGet("/login", async Task<IResult> (
-        MicrosoftAuthService microsoftAuthService,
-        HttpResponse response) =>
+        IMicrosoftAuthService authService,
+        HttpResponse response,
+        HttpContext context) =>
     {
         // Generate the Microsoft OAuth URL for the initial authentication request
-        var authUrl = microsoftAuthService.GenerateMicrosoftOAuthUrl();
-        return TypedResults.Ok(authUrl);
+        var authUrl = authService.GenerateOAuthUrl();
+        return !string.IsNullOrEmpty(authUrl)
+            ? TypedResults.Ok(authUrl)
+            : context.CreateNotFoundProblem("Microsoft OAuth URL", string.Empty);
     })
     .WithName("MicrosoftLogin")
     .WithDescription("Initiates the Microsoft OAuth2 authentication flow by generating an authorization URL")
@@ -637,43 +649,41 @@ microsoftAuthGroup.MapGet("/login", async Task<IResult> (
 // Endpoint to handle the Microsoft OAuth callback
 microsoftAuthGroup.MapGet("/callback", async Task<IResult> (
         HttpRequest request,
-        MicrosoftAuthService microsoftAuthService,
-        IJwtTokenService jwtService) =>
+        IMicrosoftAuthService authService,
+        IJwtTokenService jwtService,
+        UserService userService,
+        HttpContext context) =>
     {
         var code = request.Query["code"].ToString();
 
         if (string.IsNullOrEmpty(code))
         {
+            return context.CreateNotFoundProblem("Authorization code", string.Empty);
             return TypedResults.BadRequest("No authorization code provided");
         }
 
         try
         {
-            var (microsoftUser, photoUrl) = await microsoftAuthService.HandleMicrosoftCallback(code);
+            var microsoftUser = await authService.HandleCallbackAsync<MicrosoftUserInfo>(code);
 
-            var token = jwtService.GenerateToken(
-                microsoftUser.Name,
-                microsoftUser.Email,
-                microsoftUser.Id,
-                "microsoft",
-                photoUrl // Microsoft photo URL from Graph API
-            );
+            var authUser = OAuthUserInfo.FromUserInfoAsync(microsoftUser);
+
+            // var newUser = OAuthUserInfo.FromMicrosoftUserInfo(microsoftUser);
+
+            if (authUser == null)
+            {
+                return context.CreateBadRequestProblem("User account cannot be created");
+            }
+
+            var user = await userService.GetOrCreateUserFromOAuthAsync(authUser);
+
+            var token = jwtService.GenerateToken(user.Id.ToString(), user.Email, user.Name, Helper.GoogleProvider);
+
 
             return TypedResults.Ok(new
             {
                 token,
-                user = new
-                {
-                    id = microsoftUser.Id,
-                    email = microsoftUser.Email,
-                    name = microsoftUser.Name,
-                    picture = photoUrl,
-                    givenName = microsoftUser.GivenName,
-                    surname = microsoftUser.Surname,
-                    jobTitle = microsoftUser.JobTitle,
-                    officeLocation = microsoftUser.OfficeLocation,
-                    preferredLanguage = microsoftUser.PreferredLanguage
-                }
+                user
             });
         }
         catch (Exception ex)

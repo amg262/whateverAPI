@@ -6,11 +6,15 @@ using whateverAPI.Options;
 
 namespace whateverAPI.Services;
 
+public interface IMicrosoftAuthService : IOAuthService
+{
+}
+
 /// <summary>
 /// Provides Microsoft OAuth 2.0 authentication services, handling the complete OAuth flow
 /// from authorization URL generation to token exchange and user information retrieval.
 /// </summary>
-public class MicrosoftAuthService
+public class MicrosoftAuthService : IMicrosoftAuthService
 {
     private readonly HttpClient _httpClient;
     private readonly MicrosoftOptions _settings;
@@ -29,7 +33,7 @@ public class MicrosoftAuthService
         _logger = logger;
     }
 
-    public string GenerateMicrosoftOAuthUrl()
+    public string GenerateOAuthUrl()
     {
         var scopes = new[]
         {
@@ -53,27 +57,16 @@ public class MicrosoftAuthService
         };
 
         // Build query string with null checking
-        var queryString = string.Join("&", queryParams
-            .Where(p => !string.IsNullOrEmpty(p.Value))
-            .Select(p => $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value)}"));
+
+        var queryString = string.Join("&", queryParams.Select(p => $"{p.Key}={Uri.EscapeDataString(p.Value)}"));
 
         return $"https://login.microsoftonline.com/common/oauth2/v2.0/authorize?{queryString}";
     }
 
     /// <summary>
-    /// Processes the OAuth callback by exchanging the authorization code for tokens
-    /// and retrieving the user's information from Microsoft.
-    /// </summary>
-    // public async Task<MicrosoftUserInfo> HandleMicrosoftCallback(string code)
-    // {
-    //     var tokenResponse = await ExchangeCodeForTokens(code);
-    //     return await GetUserInfo(tokenResponse.AccessToken);
-    // }
-
-    /// <summary>
     /// Exchanges an authorization code for access and refresh tokens.
     /// </summary>
-    private async Task<MicrosoftTokenResponse> ExchangeCodeForTokens(string code)
+    public async Task<TokenResponse> ExchangeCodeForTokensAsync(string code)
     {
         var tokenRequest = new Dictionary<string, string>
         {
@@ -95,14 +88,14 @@ public class MicrosoftAuthService
             throw new HttpRequestException("Failed to exchange code for tokens");
         }
 
-        var response = await tokenResponse.Content.ReadFromJsonAsync<MicrosoftTokenResponse>();
+        var response = await tokenResponse.Content.ReadFromJsonAsync<TokenResponse>();
         return response ?? throw new HttpRequestException("Invalid token response");
     }
 
     /// <summary>
     /// Retrieves user information from Microsoft's Graph API using an access token.
     /// </summary>
-    private async Task<MicrosoftUserInfo> GetUserInfo(string accessToken)
+    public async Task<TResponse> GetUserInfoAsync<TResponse>(string accessToken)
     {
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
@@ -119,7 +112,7 @@ public class MicrosoftAuthService
                 throw new HttpRequestException("Failed to get user information");
             }
 
-            var userInfo = await response.Content.ReadFromJsonAsync<MicrosoftUserInfo>();
+            var userInfo = await response.Content.ReadFromJsonAsync<TResponse>();
             return userInfo ?? throw new HttpRequestException("Invalid user info response");
         }
         finally
@@ -127,7 +120,7 @@ public class MicrosoftAuthService
             _httpClient.DefaultRequestHeaders.Authorization = null;
         }
     }
-    
+
     private async Task<string?> GetUserPhotoUrl(string accessToken)
     {
         _httpClient.DefaultRequestHeaders.Authorization =
@@ -140,10 +133,10 @@ public class MicrosoftAuthService
 
 
             return null;
-            
+
             // this shit works but its complicated as a mf
             // this shit works but its complicated as a mf
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("User photo not found or not accessible");
@@ -152,17 +145,17 @@ public class MicrosoftAuthService
 
             // Read the photo bytes
             var photoBytes = await response.Content.ReadAsByteArrayAsync();
-            
+
             // Get the content type (usually image/jpeg)
             var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/jpeg";
-            
+
             // Convert to base64 data URL
             var base64Photo = Convert.ToBase64String(photoBytes);
-            
-            
+
+
             return $"data:{contentType};base64,{base64Photo}";
-            
-            return null;  // User has no photo
+
+            return null; // User has no photo
         }
         catch (Exception ex)
         {
@@ -175,14 +168,13 @@ public class MicrosoftAuthService
         }
     }
 
-    public async Task<(MicrosoftUserInfo UserInfo, string? PhotoUrl)> HandleMicrosoftCallback(string code)
+    public async Task<TResponse> HandleCallbackAsync<TResponse>(string code)
     {
-        var tokenResponse = await ExchangeCodeForTokens(code);
-        var userInfo = await GetUserInfo(tokenResponse.AccessToken);
-        var photoUrl = await GetUserPhotoUrl(tokenResponse.AccessToken);
-        
-        return (userInfo, photoUrl);
+        var tokenResponse = await ExchangeCodeForTokensAsync(code);
+        var userInfo = await GetUserInfoAsync<TResponse>(tokenResponse.AccessToken);
+        // userInfo.Picture = await GetUserPhotoUrl(tokenResponse.AccessToken);
+        // var photoUrl = await GetUserPhotoUrl(tokenResponse.AccessToken);
+
+        return userInfo;
     }
 }
-
-

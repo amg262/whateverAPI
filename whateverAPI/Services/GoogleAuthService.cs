@@ -4,6 +4,9 @@ using whateverAPI.Models;
 using whateverAPI.Options;
 
 namespace whateverAPI.Services;
+public interface IGoogleAuthService : IOAuthService
+{
+}
 
 /// <summary>
 /// Provides Google OAuth 2.0 authentication services for the application, handling the complete OAuth flow
@@ -23,7 +26,7 @@ namespace whateverAPI.Services;
 /// - https://www.googleapis.com/auth/user.phonenumbers.read: Access to phone numbers
 /// - https://www.googleapis.com/auth/user.addresses.read: Access to addresses
 /// </remarks>
-public class GoogleAuthService
+public class GoogleAuthService : IGoogleAuthService
 {
     private readonly HttpClient _httpClient;
     private readonly GoogleOptions _settings;
@@ -53,16 +56,16 @@ public class GoogleAuthService
     /// The URL includes client ID, redirect URI, response type, requested scopes,
     /// and additional parameters for offline access and consent prompt.
     /// </returns>
-    public string GenerateGoogleOAuthUrl()
+    public string GenerateOAuthUrl()
     {
         var scopes = new[]
         {
             "openid",
             "email",
             "profile",
-            "https://www.googleapis.com/auth/user.birthday.read",
-            "https://www.googleapis.com/auth/user.phonenumbers.read",
-            "https://www.googleapis.com/auth/user.addresses.read"
+            // "https://www.googleapis.com/auth/user.birthday.read",
+            // "https://www.googleapis.com/auth/user.phonenumbers.read",
+            // "https://www.googleapis.com/auth/user.addresses.read"
         };
 
         var queryParams = new Dictionary<string, string>
@@ -81,6 +84,7 @@ public class GoogleAuthService
         return $"https://accounts.google.com/o/oauth2/v2/auth?{queryString}";
     }
 
+
     /// <summary>
     /// Processes the OAuth callback by exchanging the authorization code for tokens
     /// and retrieving the user's information from Google.
@@ -93,14 +97,15 @@ public class GoogleAuthService
     /// <exception cref="HttpRequestException">
     /// Thrown when token exchange fails or user information cannot be retrieved
     /// </exception>
-    public async Task<GoogleUserInfo> HandleGoogleCallback(string code)
+    public async Task<TResponse> HandleCallbackAsync<TResponse>(string code)
     {
         // First, exchange the code for tokens
-        var tokenResponse = await ExchangeCodeForTokens(code);
+        var tokenResponse = await ExchangeCodeForTokensAsync(code);
 
         // Then, get the user information using the access token
-        return await GetUserInfo(tokenResponse.AccessToken);
+        return await GetUserInfoAsync<TResponse>(tokenResponse.AccessToken);
     }
+    
 
     /// <summary>
     /// Exchanges an authorization code for access and refresh tokens.
@@ -112,7 +117,7 @@ public class GoogleAuthService
     /// <exception cref="HttpRequestException">
     /// Thrown when the token exchange fails or returns invalid data
     /// </exception>
-    private async Task<GoogleTokenResponse> ExchangeCodeForTokens(string code)
+    public async Task<TokenResponse> ExchangeCodeForTokensAsync(string code)
     {
         var tokenRequest = new Dictionary<string, string>
         {
@@ -133,22 +138,13 @@ public class GoogleAuthService
             throw new HttpRequestException("Failed to exchange code for tokens");
         }
 
-        var response = await tokenResponse.Content.ReadFromJsonAsync<GoogleTokenResponse>();
+        var response = await tokenResponse.Content.ReadFromJsonAsync<TokenResponse>();
         return response ?? throw new HttpRequestException("Invalid token response");
     }
 
-    /// <summary>
-    /// Retrieves user information from Google's userinfo endpoint using an access token.
-    /// </summary>
-    /// <param name="accessToken">The access token to authenticate the request</param>
-    /// <returns>
-    /// A GoogleUserInfo object containing the user's profile information
-    /// </returns>
-    /// <exception cref="HttpRequestException">
-    /// Thrown when user information cannot be retrieved or is invalid
-    /// </exception>
-    private async Task<GoogleUserInfo> GetUserInfo(string accessToken)
+    public async Task<TResponse> GetUserInfoAsync<TResponse>(string accessToken)
     {
+        // Get the google user info
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", accessToken);
 
@@ -163,7 +159,8 @@ public class GoogleAuthService
                 throw new HttpRequestException("Failed to get user information");
             }
 
-            var userInfo = await response.Content.ReadFromJsonAsync<GoogleUserInfo>();
+            var userInfo = await response.Content.ReadFromJsonAsync<TResponse>();
+
             return userInfo ?? throw new HttpRequestException("Invalid user info response");
         }
         finally
