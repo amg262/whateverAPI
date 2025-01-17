@@ -81,6 +81,9 @@ public class MicrosoftAuthService : IMicrosoftAuthService
             "https://login.microsoftonline.com/common/oauth2/v2.0/token",
             new FormUrlEncodedContent(tokenRequest));
 
+
+        tokenResponse.EnsureSuccessStatusCode();
+        
         if (!tokenResponse.IsSuccessStatusCode)
         {
             var error = await tokenResponse.Content.ReadAsStringAsync();
