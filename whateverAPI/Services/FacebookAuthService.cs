@@ -43,7 +43,7 @@ public class FacebookAuthService : IFacebookAuthService
             ["redirect_uri"] = _settings.RedirectUri,
             ["response_type"] = "code",
             ["scope"] = string.Join(" ", scopes),
-            ["state"] = Guid.NewGuid().ToString()
+            ["state"] = Guid.CreateVersion7().ToString()
         };
 
         var queryString = string.Join("&", queryParams.Select(p =>

@@ -398,7 +398,7 @@ public class JokeService //: IJokeService
     /// </remarks>
     /// <param name="ct">Cancellation token for operation cancellation</param>
     /// <returns>A list of all jokes with their associated tags</returns>
-    public async Task<List<Joke>?> GetJokes(CancellationToken ct = default) =>
+    public async Task<List<Joke>?> GetJokesAsync(CancellationToken ct = default) =>
         await _db.Jokes.Include(j => j.Tags).AsNoTracking().ToListAsync(ct);
 
     /// <summary>

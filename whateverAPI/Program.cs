@@ -132,7 +132,6 @@ if (app.Environment.IsDevelopment() || !app.Environment.IsDevelopment())
         opts.Favicon = "/favicon.ico";
         opts.OperationSorter = OperationSorter.Method;
         opts.TagSorter = TagSorter.Alpha;
-        // opts.DefaultOpenAllTags = true;
         opts.Layout = ScalarLayout.Modern;
         opts.DefaultFonts = true;
         opts.ShowSidebar = true;
@@ -164,13 +163,13 @@ jokeGroup.MapGet("/", async Task<IResult> (
         HttpContext context,
         CancellationToken ct = default) =>
     {
-        var jokes = await jokeService.GetJokes(ct);
+        var jokes = await jokeService.GetJokesAsync(ct);
         return jokes is not null && jokes.Count != 0
             // ? TypedResults.Ok(Mapper.JokesToJokeReponses(jokes))
             ? TypedResults.Ok(Joke.ToJokeResponses(jokes))
             : context.CreateNotFoundProblem(nameof(Joke), "all");
     })
-    .WithName("GetJokes")
+    .WithName("GetJokesAsync")
     .WithDescription("Retrieves all jokes from the database with pagination")
     .WithSummary("Get all jokes")
     .WithOpenApi()

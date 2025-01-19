@@ -53,7 +53,7 @@ public class MicrosoftAuthService : IMicrosoftAuthService
             ["scope"] = string.Join(" ", scopes),
             ["response_mode"] = "query",
             // Add state parameter for security
-            ["state"] = Guid.NewGuid().ToString()
+            ["state"] = Guid.CreateVersion7().ToString()
         };
 
         // Build query string with null checking
