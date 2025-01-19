@@ -35,6 +35,9 @@ public class User
     // Navigation property for user's jokes
     [JsonIgnore] public List<Joke> Jokes { get; set; } = [];
 
+    [JsonIgnore] public List<Role> Roles { get; set; } = [];
+
+
     // Factory method for creating users from OAuth info
     public static User FromOAuthInfo(OAuthUserInfo userInfo) => new()
     {
