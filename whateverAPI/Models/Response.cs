@@ -9,16 +9,13 @@ public record JokeResponse
     public string? Content { get; init; }
     public JokeType? Type { get; init; }
     public DateTime CreatedAt { get; init; }
-
     public DateTime ModifiedAt { get; init; }
     public List<string>? Tags { get; init; } = [];
     public int? LaughScore { get; init; }
-
     public bool IsActive { get; init; }
-
     public string? UserId { get; init; }
 
-    public User? User { get; init; }
+    // public User? User { get; init; }
 }
 
 public record TagResponse
@@ -100,13 +97,11 @@ public record GoogleUserInfo
     [JsonPropertyName("email")] public string Email { get; init; } = "";
 
     [JsonPropertyName("verified_email")] public bool EmailVerified { get; init; }
-
     [JsonPropertyName("name")] public string Name { get; init; } = "";
 
     [JsonPropertyName("given_name")] public string? GivenName { get; init; }
 
     [JsonPropertyName("family_name")] public string? FamilyName { get; init; }
-
     [JsonPropertyName("picture")] public string? Picture { get; init; }
 
     [JsonPropertyName("locale")] public string? Locale { get; init; }
@@ -138,11 +133,8 @@ public record MicrosoftTokenResponse
 public record MicrosoftUserInfo
 {
     [JsonPropertyName("id")] public string Id { get; init; } = "";
-
     [JsonPropertyName("displayName")] public string Name { get; init; } = "";
-
-    [JsonPropertyName("userPrincipalName")]
-    public string Email { get; init; } = "";
+    [JsonPropertyName("userPrincipalName")] public string Email { get; init; } = "";
 
     [JsonPropertyName("givenName")] public string? GivenName { get; init; }
 
@@ -152,9 +144,7 @@ public record MicrosoftUserInfo
 
     [JsonPropertyName("officeLocation")] public string? OfficeLocation { get; init; }
 
-    [JsonPropertyName("preferredLanguage")]
-    public string? PreferredLanguage { get; init; }
-
+    [JsonPropertyName("preferredLanguage")] public string? PreferredLanguage { get; init; }
     [JsonPropertyName("picture")] public string? Picture { get; set; }
 }
 

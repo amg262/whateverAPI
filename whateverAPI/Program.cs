@@ -41,6 +41,8 @@ builder.Services.AddProblemDetails(options =>
     };
 });
 
+builder.Services.AddApplicationInsightsTelemetry();
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -693,6 +695,7 @@ microsoftAuthGroup.MapGet("/callback", async Task<IResult> (
         }
         catch (Exception ex)
         {
+            return context.CreateBadRequestProblem(ex.Message);
             return TypedResults.BadRequest(new { error = ex.Message });
         }
     })
