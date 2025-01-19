@@ -29,6 +29,7 @@ public record OAuthUserInfo
         {
             MicrosoftUserInfo microsoftUserInfo => FromMicrosoftUserInfo(microsoftUserInfo),
             GoogleUserInfo googleUserInfo => FromGoogleUserInfo(googleUserInfo),
+            FacebookUserInfo facebookUserInfo => FromFacebookUserInfo(facebookUserInfo),
             _ => null
         };
     }
@@ -51,6 +52,15 @@ public record OAuthUserInfo
         Provider = Helper.GoogleProvider,
     };
 
+    private static OAuthUserInfo FromFacebookUserInfo(FacebookUserInfo userInfo) => new()
+    {
+        Id = userInfo.Id,
+        Email = userInfo.Email,
+        Name = userInfo.Name,
+        Picture = userInfo.Picture?.Data?.Url ?? string.Empty,
+        Provider = Helper.FacebookProvider,
+    };
+
     public static MicrosoftUserInfo ToMicrosoftUserInfo(OAuthUserInfo userInfo) => new()
     {
         Id = userInfo.Id,
@@ -65,5 +75,19 @@ public record OAuthUserInfo
         Email = userInfo.Email,
         Name = userInfo.Name,
         Picture = userInfo.Picture,
+    };
+
+    public static FacebookUserInfo ToFacebookUserInfo(OAuthUserInfo userInfo) => new()
+    {
+        Id = userInfo.Id,
+        Email = userInfo.Email,
+        Name = userInfo.Name,
+        Picture = new FacebookPicture
+        {
+            Data = new FacebookPictureData
+            {
+                Url = userInfo.Picture ?? string.Empty
+            }
+        }
     };
 }

@@ -3,7 +3,6 @@ using whateverAPI.Entities;
 
 namespace whateverAPI.Models;
 
-
 public record JokeResponse
 {
     public Guid Id { get; init; }
@@ -16,9 +15,9 @@ public record JokeResponse
     public int? LaughScore { get; init; }
 
     public bool IsActive { get; init; }
-    
+
     public string? UserId { get; init; }
-    
+
     public User? User { get; init; }
 }
 
@@ -80,11 +79,9 @@ public record GoogleTokenResponse
     [JsonPropertyName("id_token")] public string IdToken { get; init; } = "";
 
     [JsonPropertyName("refresh_token")] public string? RefreshToken { get; init; }
-    
+
     [JsonPropertyName("expires_in")] public int ExpiresIn { get; init; }
-
 }
-
 
 public record TokenResponse
 {
@@ -93,9 +90,8 @@ public record TokenResponse
     [JsonPropertyName("id_token")] public string IdToken { get; init; } = "";
 
     [JsonPropertyName("refresh_token")] public string? RefreshToken { get; init; }
-    
-    [JsonPropertyName("expires_in")] public int ExpiresIn { get; init; }
 
+    [JsonPropertyName("expires_in")] public int ExpiresIn { get; init; }
 }
 
 public record GoogleUserInfo
@@ -158,7 +154,30 @@ public record MicrosoftUserInfo
 
     [JsonPropertyName("preferredLanguage")]
     public string? PreferredLanguage { get; init; }
-    
-    [JsonPropertyName("picture")] public string? Picture { get; set; }
 
+    [JsonPropertyName("picture")] public string? Picture { get; set; }
+}
+
+/// <summary>
+/// Represents user information retrieved from Facebook Graph API.
+/// </summary>
+public record FacebookUserInfo
+{
+    [JsonPropertyName("id")] public string Id { get; init; } = "";
+
+    [JsonPropertyName("name")] public string Name { get; init; } = "";
+
+    [JsonPropertyName("email")] public string Email { get; init; } = "";
+
+    [JsonPropertyName("picture")] public FacebookPicture Picture { get; init; } = new();
+}
+
+public record FacebookPicture
+{
+    [JsonPropertyName("data")] public FacebookPictureData Data { get; init; } = new();
+}
+
+public record FacebookPictureData
+{
+    [JsonPropertyName("url")] public string Url { get; init; } = "";
 }

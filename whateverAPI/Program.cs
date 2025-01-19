@@ -15,7 +15,6 @@ using whateverAPI.Models;
 using whateverAPI.Options;
 using whateverAPI.Services;
 
-
 // try to redeploy
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration
@@ -25,7 +24,7 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("ProductionConnection"),
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
             o => o.EnableRetryOnFailure())
         .EnableDetailedErrors()
         .EnableSensitiveDataLogging());
@@ -80,11 +79,13 @@ builder.Services.AddExceptionHandler<GlobalException>();
 builder.Services.AddOptions<JwtOptions>().BindConfiguration(nameof(JwtOptions));
 builder.Services.AddOptions<GoogleOptions>().BindConfiguration(nameof(GoogleOptions));
 builder.Services.AddOptions<MicrosoftOptions>().BindConfiguration(nameof(MicrosoftOptions));
+builder.Services.AddOptions<FacebookOptions>().BindConfiguration(nameof(FacebookOptions));
 
 builder.Services.AddScoped(typeof(ValidationFilter<>));
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 builder.Services.AddScoped<IMicrosoftAuthService, MicrosoftAuthService>();
+builder.Services.AddScoped<IFacebookAuthService, FacebookAuthService>();
 
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<JokeService>();
@@ -92,6 +93,7 @@ builder.Services.AddScoped<TagService>();
 builder.Services.AddScoped<JokeApiService>();
 
 builder.Services.AddHttpClient<GoogleAuthService>().AddStandardResilienceHandler();
+builder.Services.AddHttpClient<MicrosoftAuthService>().AddStandardResilienceHandler();
 builder.Services.AddHttpClient<MicrosoftAuthService>().AddStandardResilienceHandler();
 builder.Services.AddHttpClient<JokeApiService>(client =>
 {
@@ -152,6 +154,7 @@ var userGroup = apiGroup.MapGroup("/user").WithTags("User");
 var tagGroup = apiGroup.MapGroup("/tags").WithTags("Tags");
 var googleAuthGroup = app.MapGroup("/api/auth/google").WithTags("Authentication");
 var microsoftAuthGroup = app.MapGroup("/api/auth/microsoft").WithTags("Authentication");
+var facebookAuthGroup = app.MapGroup("/api/auth/facebook").WithTags("Authentication");
 
 // Get All Jokes
 jokeGroup.MapGet("/", async Task<IResult> (
@@ -699,6 +702,92 @@ microsoftAuthGroup.MapGet("/callback", async Task<IResult> (
     .WithSummary("Complete Microsoft authentication")
     .WithOpenApi()
     .Produces<MicrosoftUserInfo>(StatusCodes.Status200OK, "application/json")
+    .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+    .ProducesProblem(StatusCodes.Status401Unauthorized)
+    .ProducesProblem(StatusCodes.Status500InternalServerError);
+
+
+facebookAuthGroup.MapGet("/login", async Task<IResult> (
+        IFacebookAuthService authService,
+        HttpResponse response,
+        HttpContext context) =>
+    {
+        // Generate the Facebook OAuth URL that the user will use to authenticate
+        var authUrl = authService.GenerateOAuthUrl();
+
+        return !string.IsNullOrEmpty(authUrl)
+            ? TypedResults.Ok(authUrl)
+            : context.CreateNotFoundProblem("Facebook OAuth URL", string.Empty);
+    })
+    .WithName("FacebookLogin")
+    .WithDescription("Initiates the Facebook OAuth2 authentication flow by generating an authorization URL")
+    .WithSummary("Start Facebook authentication")
+    .WithOpenApi()
+    .Produces<string>(StatusCodes.Status200OK, "application/json")
+    .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+    .ProducesProblem(StatusCodes.Status500InternalServerError);
+
+// Callback endpoint - Handles the OAuth response
+facebookAuthGroup.MapGet("/callback", async Task<IResult> (
+        HttpRequest request,
+        IFacebookAuthService authService,
+        IJwtTokenService jwtService,
+        UserService userService,
+        HttpContext context,
+        CancellationToken ct) =>
+    {
+        // Extract the authorization code from the callback
+        var code = request.Query["code"].ToString();
+
+        if (string.IsNullOrEmpty(code))
+        {
+            return context.CreateNotFoundProblem("Authorization code", string.Empty);
+        }
+
+        try
+        {
+            // Exchange the authorization code for user information using the Facebook API
+            var facebookUser = await authService.HandleCallbackAsync<FacebookUserInfo>(code);
+
+            // Convert the Facebook-specific user info to our common OAuth format
+            var authUser = OAuthUserInfo.FromUserInfoAsync(facebookUser);
+
+            if (authUser == null)
+            {
+                return context.CreateBadRequestProblem("User account cannot be created");
+            }
+
+            // Create or update the user in our system
+            var user = await userService.GetOrCreateUserFromOAuthAsync(authUser, ct);
+
+            // Generate a JWT token for subsequent API calls
+            var token = jwtService.GenerateToken(
+                user.Id.ToString(),
+                user.Email,
+                user.Name,
+                Helper.FacebookProvider);
+
+            // Return both the user information and the JWT token
+            return TypedResults.Ok(new
+            {
+                token,
+                user
+            });
+        }
+        catch (Exception ex)
+        {
+            return context.CreateExternalServiceProblem(
+                "Facebook Authentication",
+                "Failed to process Facebook authentication",
+                ex);
+        }
+    })
+    .WithName("FacebookCallback")
+    .WithDescription(
+        "Handles the OAuth2 callback from Facebook, exchanging the authorization code for user information and generating a JWT token")
+    .WithSummary("Complete Facebook authentication")
+    .WithOpenApi()
+    .Produces<object>(StatusCodes.Status200OK, "application/json")
     .ProducesValidationProblem(StatusCodes.Status400BadRequest)
     .ProducesProblem(StatusCodes.Status401Unauthorized)
     .ProducesProblem(StatusCodes.Status500InternalServerError);

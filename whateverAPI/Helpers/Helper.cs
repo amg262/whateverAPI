@@ -13,5 +13,6 @@ public static class Helper
     
     public const string MicrosoftProvider = "microsoft";
     public const string GoogleProvider = "google";
+    public const string FacebookProvider = "facebook";
     
 }

@@ -23,6 +23,7 @@ public class UserService
         {
             Helper.GoogleProvider => await _db.Users.FirstOrDefaultAsync(u => u.GoogleId == userInfo.Id, ct),
             Helper.MicrosoftProvider => await _db.Users.FirstOrDefaultAsync(u => u.MicrosoftId == userInfo.Id, ct),
+            Helper.FacebookProvider => await _db.Users.FirstOrDefaultAsync(u => u.FacebookId == userInfo.Id, ct),
             _ => null
         };
 
@@ -39,14 +40,15 @@ public class UserService
                 Console.WriteLine("Picture is null");
                 user.PictureUrl = userInfo.Picture;
             }
+
             // user.PictureUrl = userInfo.Picture ?? user.PictureUrl;
             user.ModifiedAt = DateTime.UtcNow;
-            
+
             // Change it to most recently used provider
             user.Provider = userInfo.Provider;
 
             // Step 4: Link the new provider ID if it's not already set
-            switch (userInfo.Provider.ToLower())
+            switch (userInfo.Provider?.ToLower())
             {
                 case Helper.GoogleProvider when user.GoogleId == null:
                     user.GoogleId = userInfo.Id;
@@ -56,11 +58,16 @@ public class UserService
                     user.MicrosoftId = userInfo.Id;
                     _logger.LogInformation("Linked Microsoft account {Id} to existing user {Email}", userInfo.Id, user.Email);
                     break;
+                case Helper.FacebookProvider when user.FacebookId == null:
+                    user.FacebookId = userInfo.Id;
+                    _logger.LogInformation("Linked Facebook account {Id} to existing user {Email}", userInfo.Id, user.Email);
+                    break;
             }
 
             // Step 5: Update the most recent provider while preserving linked accounts
-            _logger.LogInformation("Updated user {Email} via {Provider} login. GoogleId: {GoogleId}, MicrosoftId: {MicrosoftId}",
-                user.Email, userInfo.Provider, user.GoogleId, user.MicrosoftId);
+            _logger.LogInformation(
+                "Updated user {Email} via {Provider} login. GoogleId: {GoogleId}, MicrosoftId: {MicrosoftId}, FacebookId: {FacebookId}",
+                user.Email, userInfo.Provider, user.GoogleId, user.MicrosoftId, user.FacebookId);
 
             await _db.SaveChangesAsync(ct);
             return user;

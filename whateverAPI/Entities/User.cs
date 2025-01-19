@@ -19,6 +19,8 @@ public class User
     public string? GoogleId { get; set; }
     public string? MicrosoftId { get; set; }
 
+    public string? FacebookId { get; set; }
+
     // Profile information
     public string? PictureUrl { get; set; }
     public string? Provider { get; set; } // "google", "microsoft", etc.
