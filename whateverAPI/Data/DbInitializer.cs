@@ -122,6 +122,42 @@ public static class DbInitializer
 
         await context.Database.MigrateAsync();
 
+        if (!context.Roles.Any())
+        {
+            var roles = new List<Role>
+            {
+                new()
+                {
+                    Id = Guid.CreateVersion7(),
+                    Name = "Root",
+                    Description = "Root User",
+                    CreatedAt = DateTime.UtcNow,
+                    ModifiedAt = DateTime.UtcNow,
+                    IsActive = true
+                },
+                new()
+                {
+                    Id = Guid.CreateVersion7(),
+                    Name = "Admin",
+                    Description = "Administrator",
+                    CreatedAt = DateTime.UtcNow,
+                    ModifiedAt = DateTime.UtcNow,
+                    IsActive = true
+                },
+                new()
+                {
+                    Id = Guid.CreateVersion7(),
+                    Name = "User",
+                    Description = "Standard User",
+                    CreatedAt = DateTime.UtcNow,
+                    ModifiedAt = DateTime.UtcNow,
+                    IsActive = true
+                },
+            };
+            context.Roles.AddRange(roles);
+            await context.SaveChangesAsync();
+        }
+
         // Check if we already have joke data
         if (context.Jokes.Any())
         {
@@ -130,6 +166,28 @@ public static class DbInitializer
         }
 
         var baseTime = DateTime.UtcNow;
+
+        var roles2 = new List<Role>
+        {
+            new()
+            {
+                Id = Guid.CreateVersion7(),
+                Name = "User",
+                Description = "Standard User",
+                CreatedAt = DateTime.UtcNow,
+                ModifiedAt = DateTime.UtcNow,
+                IsActive = true
+            },
+            new()
+            {
+                Id = Guid.CreateVersion7(),
+                Name = "Admin",
+                Description = "Administrator",
+                CreatedAt = DateTime.UtcNow,
+                ModifiedAt = DateTime.UtcNow,
+                IsActive = true
+            }
+        };
 
         var programmingTag = new Tag
         {
@@ -376,7 +434,6 @@ public static class DbInitializer
 
         // Add all jokes to the context
         context.Jokes.AddRange(jokes);
-
         // Save changes to persist the seed data
         await context.SaveChangesAsync();
 

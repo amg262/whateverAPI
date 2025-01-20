@@ -28,6 +28,7 @@ public class AppDbContext : DbContext
             // .WithMany()
             .WithMany(r => r.Users)
             .UsingEntity(j => j.ToTable(Helper.UserRolesTable));
+        
 
         base.OnModelCreating(modelBuilder);
     }
