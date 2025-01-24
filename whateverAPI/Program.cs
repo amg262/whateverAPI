@@ -94,9 +94,9 @@ builder.Services.AddScoped<JokeService>();
 builder.Services.AddScoped<TagService>();
 builder.Services.AddScoped<JokeApiService>();
 
-builder.Services.AddHttpClient<GoogleAuthService>().AddStandardResilienceHandler();
-builder.Services.AddHttpClient<MicrosoftAuthService>().AddStandardResilienceHandler();
-builder.Services.AddHttpClient<MicrosoftAuthService>().AddStandardResilienceHandler();
+builder.Services.AddHttpClient<IGoogleAuthService, GoogleAuthService>().AddStandardResilienceHandler();
+builder.Services.AddHttpClient<IMicrosoftAuthService, MicrosoftAuthService>().AddStandardResilienceHandler();
+builder.Services.AddHttpClient<IFacebookAuthService, FacebookAuthService>().AddStandardResilienceHandler();
 builder.Services.AddHttpClient<JokeApiService>(client =>
 {
     client.DefaultRequestHeaders.Clear();

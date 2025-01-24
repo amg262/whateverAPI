@@ -10,7 +10,7 @@ public class User
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.None)]
-    public Guid Id { get; set; }
+    public required Guid Id { get; set; }
 
     public required string Name { get; set; }
     public required string Email { get; set; }
@@ -24,6 +24,8 @@ public class User
     // Profile information
     public string? PictureUrl { get; set; }
     public string? Provider { get; set; } // "google", "microsoft", etc.
+    
+    
 
     // Timestamps
     public DateTime CreatedAt { get; set; }
@@ -34,6 +36,8 @@ public class User
 
     // Navigation property for user's jokes
     [JsonIgnore] public List<Joke> Jokes { get; set; } = [];
+
+    [JsonIgnore] public List<Role> Roles { get; set; } = [];
 
     // Factory method for creating users from OAuth info
     public static User FromOAuthInfo(OAuthUserInfo userInfo) => new()
@@ -47,6 +51,9 @@ public class User
             ? userInfo.Id
             : null,
         MicrosoftId = userInfo.Provider.Equals(Helper.MicrosoftProvider, StringComparison.CurrentCultureIgnoreCase)
+            ? userInfo.Id
+            : null,
+        FacebookId = userInfo.Provider.Equals(Helper.FacebookProvider, StringComparison.CurrentCultureIgnoreCase)
             ? userInfo.Id
             : null,
         CreatedAt = DateTime.UtcNow,
