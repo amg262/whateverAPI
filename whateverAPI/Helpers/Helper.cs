@@ -3,7 +3,7 @@
 public static class Helper
 {
     public const string JokeTagsTableName = "JokeTags";
-    public const string UserRolesTable = "UserRoles";
+    public const string UserRolesTable = "UserRole";
 
     public const string TokenCookie = "whateverToken";
     public const string CorsPolicy = "CorsPolicy";

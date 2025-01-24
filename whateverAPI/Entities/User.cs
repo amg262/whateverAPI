@@ -24,8 +24,7 @@ public class User
     // Profile information
     public string? PictureUrl { get; set; }
     public string? Provider { get; set; } // "google", "microsoft", etc.
-    
-    
+
 
     // Timestamps
     public DateTime CreatedAt { get; set; }
@@ -37,7 +36,9 @@ public class User
     // Navigation property for user's jokes
     [JsonIgnore] public List<Joke> Jokes { get; set; } = [];
 
-    [JsonIgnore] public List<Role> Roles { get; set; } = [];
+    public Guid? RoleId { get; set; }
+
+    [ForeignKey(nameof(RoleId))] public Role? Role { get; set; }
 
     // Factory method for creating users from OAuth info
     public static User FromOAuthInfo(OAuthUserInfo userInfo) => new()
@@ -58,6 +59,7 @@ public class User
             : null,
         CreatedAt = DateTime.UtcNow,
         ModifiedAt = DateTime.UtcNow,
-        IsActive = true
+        IsActive = true,
+        RoleId = Guid.Empty,
     };
 }

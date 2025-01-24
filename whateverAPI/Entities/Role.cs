@@ -11,12 +11,22 @@ public class Role
     public Guid Id { get; set; }
 
     public string Name { get; set; }
-    public string Description { get; set; }
+    public string? Description { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime ModifiedAt { get; set; }
 
     public bool IsActive { get; set; }
 
     // // Many-to-many relationship with users
-    [JsonIgnore] public List<User> Users { get; set; } = [];
+    public List<User> Users { get; set; } = [];
+    
+    public static Role Create(string name, string? description = null) => new()
+    {
+        Id = Guid.CreateVersion7(),
+        Name = name.ToLower().Trim(),
+        Description = description,
+        CreatedAt = DateTime.UtcNow,
+        ModifiedAt = DateTime.UtcNow,
+        IsActive = true
+    };
 }
