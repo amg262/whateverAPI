@@ -60,6 +60,5 @@ public class User
         CreatedAt = DateTime.UtcNow,
         ModifiedAt = DateTime.UtcNow,
         IsActive = true,
-        RoleId = Guid.Empty,
     };
 }

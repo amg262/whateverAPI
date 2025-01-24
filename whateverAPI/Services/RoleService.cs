@@ -77,7 +77,7 @@ public class RoleService
 
     private async Task<bool> HasRoleAsync(Guid userId, string roleName, CancellationToken ct = default)
     {
-        return await _db.Users
+        var a = await _db.Users
             .AnyAsync(u => u.Id == userId && 
                           u.Role!.Name.ToLower() == roleName.ToLower(), ct);
     }
