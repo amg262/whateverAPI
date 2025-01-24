@@ -107,6 +107,26 @@ public static class DbInitializer
         await SeedData(scope.ServiceProvider.GetService<AppDbContext>());
     }
 
+    private static async Task SeedRoles(AppDbContext context)
+    {
+        if (await context.Roles.AnyAsync())
+        {
+            return;
+        }
+
+        var roles = new[]
+        {
+            Role.Create("admin", "Full system access"),
+            Role.Create("moderator", "Content management access"),
+            Role.Create("user", "Basic user access")
+        };
+
+        context.Roles.AddRange(roles);
+        await context.SaveChangesAsync();
+
+        Console.WriteLine("Seeded default roles");
+    }
+
     /// <summary>
     /// Seeds the database with a carefully curated set of initial data, providing
     /// a rich variety of jokes across different categories and types.
@@ -121,6 +141,23 @@ public static class DbInitializer
         }
 
         await context.Database.MigrateAsync();
+
+        if (await context.Roles.AnyAsync())
+        {
+            return;
+        }
+
+        var roles = new[]
+        {
+            Role.Create("admin", "Full system access"),
+            Role.Create("moderator", "Content management access"),
+            Role.Create("user", "Basic user access")
+        };
+
+        context.Roles.AddRange(roles);
+        await context.SaveChangesAsync();
+
+        Console.WriteLine("Seeded default roles");
 
         // Check if we already have joke data
         if (context.Jokes.Any())
