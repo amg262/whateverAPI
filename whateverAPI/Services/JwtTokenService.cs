@@ -81,6 +81,7 @@ public class JwtTokenService : IJwtTokenService
     /// <param name="httpContextAccessor">Provides access to the HTTP context.</param>
     /// <param name="options">Options for configuring JWT token handling.</param>
     /// <param name="logger">Logger for JwtTokenService</param>
+    /// <param name="roleService">RoleService for JWT token provider</param>
     public JwtTokenService(IHttpContextAccessor httpContextAccessor, IOptions<JwtOptions> options,
         ILogger<JwtTokenService> logger, RoleService roleService)
     {
@@ -191,11 +192,10 @@ public class JwtTokenService : IJwtTokenService
         };
         
         var role = await _roleService.GetUserRoleAsync(Guid.Parse(userId));
-        
-        if (role != null)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, role.Name));
-        }
+
+        claims.Add(role != null 
+            ? new Claim(ClaimTypes.Role, role.Name) 
+            : new Claim(ClaimTypes.Role, "user"));
 
         // token descriptor with issuer, audience, expiration, signing credentials, and claims
         var tokenDescriptor = new SecurityTokenDescriptor
