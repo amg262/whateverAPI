@@ -232,3 +232,41 @@ public record UserLoginRequest
         }
     }
 }
+
+
+public record AssignRoleRequest
+{
+    public required Guid UserId { get; init; }
+    public required string RoleName { get; init; }
+
+    public class Validator : AbstractValidator<AssignRoleRequest>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.UserId)
+                .NotEmpty().WithMessage("User ID is required");
+
+            RuleFor(x => x.RoleName)
+                .NotEmpty().WithMessage("Role name is required")
+                .MinimumLength(2).WithMessage("Role name must be at least 2 characters")
+                .MaximumLength(50).WithMessage("Role name cannot exceed 50 characters");
+        }
+    }
+}
+
+public record CreateRoleRequest
+{
+    public required string Name { get; init; }
+    public string? Description { get; init; }
+
+    public class Validator : AbstractValidator<CreateRoleRequest>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.Name)
+                .NotEmpty()
+                .MinimumLength(2)
+                .MaximumLength(50);
+        }
+    }
+}

@@ -31,7 +31,7 @@ public interface IJwtTokenService
     /// Generates a JWT token with claims including the user's IP address.
     /// </summary>
     /// <returns>A JWT token string.</returns>
-    string GenerateToken(string? userId, string? email, string? name, string? provider, bool saveCookie = true);
+    Task<string> GenerateToken(string? userId, string? email, string? name, string? provider, bool saveCookie = true);
 
     /// <summary>
     /// Validates the given JWT token.
@@ -72,6 +72,7 @@ public class JwtTokenService : IJwtTokenService
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly JwtOptions _options;
     private readonly ILogger<JwtTokenService> _logger;
+    private readonly RoleService _roleService;
 
 
     /// <summary>
@@ -81,10 +82,11 @@ public class JwtTokenService : IJwtTokenService
     /// <param name="options">Options for configuring JWT token handling.</param>
     /// <param name="logger">Logger for JwtTokenService</param>
     public JwtTokenService(IHttpContextAccessor httpContextAccessor, IOptions<JwtOptions> options,
-        ILogger<JwtTokenService> logger)
+        ILogger<JwtTokenService> logger, RoleService roleService)
     {
         _httpContextAccessor = httpContextAccessor;
         _logger = logger;
+        _roleService = roleService;
         _options = options.Value;
     }
 
@@ -167,7 +169,7 @@ public class JwtTokenService : IJwtTokenService
     /// Generates a JWT token with claims including the user's IP address.
     /// </summary>
     /// <returns>A JWT token string.</returns>
-    public string GenerateToken(string? userId, string? name, string? email, string? provider, bool saveCookie = true)
+    public async Task<string> GenerateToken(string? userId, string? name, string? email, string? provider, bool saveCookie = true)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
@@ -184,9 +186,16 @@ public class JwtTokenService : IJwtTokenService
             new(JwtRegisteredClaimNames.Jti, Guid.CreateVersion7().ToString()),
             new(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString(CultureInfo.CurrentCulture), ClaimValueTypes.Integer64),
             new("ip", ip),
+            new("provider", provider ?? "Unknown"),
             // new("uid", userId ?? "Unknown"),
-            // new("provider", provider ?? "Unknown"),
         };
+        
+        var role = await _roleService.GetUserRoleAsync(Guid.Parse(userId));
+        
+        if (role != null)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role.Name));
+        }
 
         // token descriptor with issuer, audience, expiration, signing credentials, and claims
         var tokenDescriptor = new SecurityTokenDescriptor

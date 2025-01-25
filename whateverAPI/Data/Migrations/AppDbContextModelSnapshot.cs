@@ -71,6 +71,32 @@ namespace whateverAPI.Data.Migrations
                     b.ToTable("Jokes");
                 });
 
+            modelBuilder.Entity("whateverAPI.Entities.Role", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("ModifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Roles");
+                });
+
             modelBuilder.Entity("whateverAPI.Entities.Tag", b =>
                 {
                     b.Property<Guid>("Id")
@@ -131,7 +157,12 @@ namespace whateverAPI.Data.Migrations
                     b.Property<string>("Provider")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
 
                     b.ToTable("Users");
                 });
@@ -158,6 +189,20 @@ namespace whateverAPI.Data.Migrations
                         .HasForeignKey("UserId");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("whateverAPI.Entities.User", b =>
+                {
+                    b.HasOne("whateverAPI.Entities.Role", "Role")
+                        .WithMany("Users")
+                        .HasForeignKey("RoleId");
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("whateverAPI.Entities.Role", b =>
+                {
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("whateverAPI.Entities.User", b =>

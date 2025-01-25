@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using FluentValidation;
 using FluentValidation.Results;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace whateverAPI.Helpers;
@@ -40,197 +41,116 @@ namespace whateverAPI.Helpers;
 public class ValidationFilter<T> : IEndpointFilter where T : class
 {
     private readonly IValidator<T> _validator;
-    private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IHostEnvironment _environment;
+    private readonly ProblemDetailsConfig _problemDetailsConfig;
     private readonly ILogger<ValidationFilter<T>> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the ValidationFilter with necessary dependencies for
-    /// request validation and error handling.
+    /// Initializes a new validation filter with required dependencies.
     /// </summary>
-    /// <param name="validator">FluentValidation validator for type T</param>
-    /// <param name="httpContextAccessor">Provides access to the current HTTP context</param>
-    /// <param name="environment">Provides environment information for conditional behavior</param>
-    /// <param name="logger">Logger for validation events and errors</param>
+    /// <param name="validator">The FluentValidation validator for type T.</param>
+    /// <param name="problemDetailsConfig">Configuration for creating standardized error responses.</param>
+    /// <param name="logger">Logger for validation events and errors.</param>
     public ValidationFilter(
         IValidator<T> validator,
-        IHttpContextAccessor httpContextAccessor,
-        IHostEnvironment environment,
+        ProblemDetailsConfig problemDetailsConfig,
         ILogger<ValidationFilter<T>> logger)
     {
         _validator = validator;
-        _httpContextAccessor = httpContextAccessor;
-        _environment = environment;
+        _problemDetailsConfig = problemDetailsConfig;
         _logger = logger;
     }
 
     /// <summary>
-    /// Processes incoming requests through the validation pipeline, ensuring data validity
-    /// before allowing the request to proceed.
+    /// Validates requests against defined validation rules before allowing them to proceed.
     /// </summary>
-    /// <param name="context">The endpoint filter invocation context</param>
-    /// <param name="next">The delegate for the next filter in the pipeline</param>
-    /// <returns>
-    /// Either the result of the next filter in the pipeline if validation succeeds,
-    /// or a Problem Details response if validation fails.
-    /// </returns>
+    /// <param name="context">The endpoint filter context containing request data.</param>
+    /// <param name="next">The delegate for the next filter in the pipeline.</param>
+    /// <returns>Either the next filter's result or a problem details response if validation fails.</returns>
     public async ValueTask<object?> InvokeAsync(
         EndpointFilterInvocationContext context,
         EndpointFilterDelegate next)
     {
+        // Set up logging context
         var correlationId = Activity.Current?.Id ?? context.HttpContext.TraceIdentifier;
-
-        // Create a logging scope for the entire validation process
         using var scope = _logger.BeginScope(new Dictionary<string, object>
         {
             ["CorrelationId"] = correlationId,
-            ["Path"] = context.HttpContext.Request.Path,
-            ["Method"] = context.HttpContext.Request.Method,
             ["ValidatedType"] = typeof(T).Name
         });
 
-        _logger.LogInformation(
-            "Starting validation for request of type {RequestType} at {Endpoint}",
-            typeof(T).Name,
-            context.HttpContext.Request.Path);
-
-        // Find the argument of type T in the request
+        // Find and validate the model
         if (context.Arguments.FirstOrDefault(x => x?.GetType() == typeof(T)) is not T argument)
         {
-            _logger.LogWarning(
-                "Request validation failed: No valid argument of type {RequestType} found in request",
-                typeof(T).Name);
-
-            return CreateProblemDetails(
-                StatusCodes.Status400BadRequest,
-                "Invalid Request",
-                "Request body is missing or malformed",
-                context.HttpContext);
+            _logger.LogWarning("Request validation failed: No valid argument of type {Type} found", typeof(T).Name);
+            return CreateInvalidRequestResponse(context.HttpContext);
         }
 
         // Perform validation
-        _logger.LogDebug("Executing validation rules for {RequestType}", typeof(T).Name);
-
         var validationResult = await _validator.ValidateAsync(argument);
-
         if (validationResult.IsValid)
         {
-            _logger.LogInformation(
-                "Validation successful for {RequestType}",
-                typeof(T).Name);
-
             return await next(context);
         }
 
-        // Log validation failures with detailed information
+        // Log validation failures
         _logger.LogWarning(
-            "Validation failed for {RequestType} with {ErrorCount} errors: {Errors}",
+            "Validation failed for {Type} with {ErrorCount} errors",
             typeof(T).Name,
-            validationResult.Errors.Count,
-            FormatValidationErrors(validationResult.Errors));
+            validationResult.Errors.Count);
 
-        // Create a structured validation response
-        var problemDetails = CreateValidationProblemDetails(
-            validationResult,
-            context.HttpContext);
-
-        // Add correlation ID header for tracking
-        context.HttpContext.Response.Headers.Append("X-Correlation-ID", correlationId);
-
-        return TypedResults.Json(
-            problemDetails,
-            statusCode: StatusCodes.Status422UnprocessableEntity,
-            contentType: "application/problem+json");
+        return CreateValidationFailureResponse(validationResult, context.HttpContext);
     }
 
     /// <summary>
-    /// Creates a detailed validation problem response that adheres to RFC 7807 specifications
-    /// while providing rich debugging information.
+    /// Creates a problem details response for invalid request format or missing data.
     /// </summary>
-    /// <param name="validationResult">The validation result containing any validation failures</param>
-    /// <param name="httpContext">The current HTTP context for request details</param>
-    /// <returns>A ValidationProblemDetails object containing structured error information</returns>
-    private ValidationProblemDetails CreateValidationProblemDetails(
-        ValidationResult validationResult,
-        HttpContext httpContext)
+    private ProblemHttpResult CreateInvalidRequestResponse(HttpContext context)
     {
-        var problemDetails = new ValidationProblemDetails
+        var problem = _problemDetailsConfig.CreateProblemDetails(
+            context,
+            StatusCodes.Status400BadRequest,
+            "Invalid Request",
+            $"Request body of type {typeof(T).Name} is missing or malformed",
+            new Dictionary<string, object?>
+            {
+                ["expectedType"] = typeof(T).Name
+            });
+
+        return TypedResults.Problem(problem);
+    }
+
+    /// <summary>
+    /// Creates a detailed validation problem response containing all validation errors.
+    /// </summary>
+    private ProblemHttpResult CreateValidationFailureResponse(
+        ValidationResult validationResult,
+        HttpContext context)
+    {
+        // Group validation errors by property
+        var errorsByProperty = validationResult.Errors
+            .GroupBy(x => x.PropertyName)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(e => e.ErrorMessage).ToArray());
+
+        var problem = new ValidationProblemDetails
         {
             Status = StatusCodes.Status422UnprocessableEntity,
             Title = "Validation Failed",
             Detail = "One or more validation errors occurred.",
-            Instance = httpContext.Request.Path,
-            Type = "https://httpstatuses.com/422"
+            Type = "https://httpstatuses.com/422",
+            Errors = errorsByProperty
         };
 
-        // Group validation errors by property
-        foreach (var error in validationResult.Errors)
+        // Add validation context
+        var additionalContext = new Dictionary<string, object?>
         {
-            if (!problemDetails.Errors.TryGetValue(error.PropertyName, out var value))
-            {
-                problemDetails.Errors[error.PropertyName] = [error.ErrorMessage];
-            }
-            else
-            {
-                var errors = value.ToList();
-                errors.Add(error.ErrorMessage);
-                problemDetails.Errors[error.PropertyName] = errors.ToArray();
-            }
-        }
-
-        // Add additional context to extensions
-        var extensions = new Dictionary<string, object>
-        {
-            ["correlationId"] = Activity.Current?.Id ?? httpContext.TraceIdentifier,
-            ["timestamp"] = DateTimeOffset.UtcNow,
-            ["requestMethod"] = httpContext.Request.Method
+            ["validatedType"] = typeof(T).Name,
+            ["errorCount"] = validationResult.Errors.Count
         };
 
-        // Include additional details in development
-        if (_environment.IsDevelopment())
-        {
-            extensions["validatedType"] = typeof(T).Name;
-            extensions["errorCount"] = validationResult.Errors.Count;
-        }
+        _problemDetailsConfig.EnrichWithContext(problem, context, additionalContext);
 
-        foreach (var extension in extensions)
-        {
-            problemDetails.Extensions[extension.Key] = extension.Value;
-        }
-
-        return problemDetails;
+        return TypedResults.Problem(problem);
     }
-
-    /// <summary>
-    /// Creates a standard problem details response for non-validation related errors.
-    /// </summary>
-    /// <param name="statusCode">The HTTP status code for the response</param>
-    /// <param name="title">A brief, human-readable summary of the problem</param>
-    /// <param name="detail">A detailed explanation of the error</param>
-    /// <param name="httpContext">The current HTTP context</param>
-    /// <returns>A ProblemDetails object containing the error information</returns>
-    private static ProblemDetails CreateProblemDetails(
-        int statusCode,
-        string title,
-        string detail,
-        HttpContext httpContext)
-    {
-        return new ProblemDetails
-        {
-            Status = statusCode,
-            Title = title,
-            Detail = detail,
-            Instance = httpContext.Request.Path,
-            Type = $"https://httpstatuses.com/{statusCode}",
-            Extensions =
-            {
-                ["correlationId"] = Activity.Current?.Id ?? httpContext.TraceIdentifier,
-                ["timestamp"] = DateTimeOffset.UtcNow,
-                ["requestMethod"] = httpContext.Request.Method
-            }
-        };
-    }
-
-    private static string FormatValidationErrors(IEnumerable<ValidationFailure> errors) =>
-        string.Join("; ", errors.Select(e => $"{e.PropertyName}: {e.ErrorMessage}"));
 }
