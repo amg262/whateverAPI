@@ -34,6 +34,29 @@ public class RoleService
         return role;
     }
 
+    public async Task<bool> AssignRoleByNameToUserAsync(Guid userId, string roleName, CancellationToken ct = default)
+    {
+        var role = _db.Roles.FirstOrDefault(r => r.Name.ToLower().Trim() == roleName.ToLower().Trim());
+
+        if (role == null)
+        {
+            throw new InvalidOperationException($"Role '{roleName}' does not exist");
+        }
+
+        var user = await _db.Users.FindAsync([userId], ct);
+
+        if (user == null)
+        {
+            throw new InvalidOperationException($"User with ID '{userId}' does not exist");
+        }
+
+        user.RoleId = role.Id;
+        _db.Users.Update(user);
+        await _db.SaveChangesAsync(ct);
+
+        return true;
+    }
+
     public async Task<bool> AssignRoleToUserAsync(Guid userId, Guid roleId, CancellationToken ct = default)
     {
         var user = await _db.Users.FindAsync([userId], ct);
@@ -52,9 +75,9 @@ public class RoleService
 
         user.RoleId = roleId;
         user.ModifiedAt = DateTime.UtcNow;
-        
+
         await _db.SaveChangesAsync(ct);
-        
+
         _logger.LogInformation("Assigned role {RoleName} to user {UserId}", role.Name, userId);
         return true;
     }
@@ -64,7 +87,7 @@ public class RoleService
         var user = await _db.Users
             .Include(u => u.Role)
             .FirstOrDefaultAsync(u => u.Id == userId, ct);
-        
+
         return user?.Role;
     }
 
@@ -75,23 +98,16 @@ public class RoleService
             .ToListAsync(ct);
     }
 
-    private async Task<bool> HasRoleAsync(Guid userId, string roleName, CancellationToken ct = default)
-    {
-        var a = await _db.Users
-            .AnyAsync(u => u.Id == userId && 
-                          u.Role!.Name.ToLower() == roleName.ToLower(), ct);
-    }
+    private async Task<bool> HasRoleAsync(Guid userId, string roleName, CancellationToken ct = default) =>
+        await _db.Users.AnyAsync(u => u.Id == userId && u.Role!.Name.ToLower() == roleName.ToLower(), ct);
 
-    public async Task<bool> IsAdminAsync(Guid userId, CancellationToken ct = default)
-    {
-        return await HasRoleAsync(userId, "admin", ct);
-    }
+
+    public async Task<bool> IsAdminAsync(Guid userId, CancellationToken ct = default) => await HasRoleAsync(userId, "admin", ct);
+
 
     public async Task<bool> IsModeratorOrAboveAsync(Guid userId, CancellationToken ct = default)
     {
         var allowedRoles = new[] { "admin", "moderator" };
-        return await _db.Users
-            .AnyAsync(u => u.Id == userId && 
-                          allowedRoles.Contains(u.Role!.Name.ToLower()), ct);
+        return await _db.Users.AnyAsync(u => u.Id == userId && allowedRoles.Contains(u.Role!.Name.ToLower()), ct);
     }
 }

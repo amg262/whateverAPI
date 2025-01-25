@@ -18,8 +18,8 @@ public class Role
     public bool IsActive { get; set; }
 
     // // Many-to-many relationship with users
-    public List<User> Users { get; set; } = [];
-    
+    [JsonIgnore] public List<User> Users { get; set; } = [];
+
     public static Role Create(string name, string? description = null) => new()
     {
         Id = Guid.CreateVersion7(),

@@ -33,6 +33,15 @@ public class Tag : IEntity<Guid>
     // [JsonIgnore] [NotMapped] public List<Joke> Jokes { get; set; } = [];
     
     
+    public static Tag Create(string tagName) => new()
+    {
+        Id = Guid.CreateVersion7(),
+        Name = tagName.ToLower().Trim(),
+        CreatedAt = DateTime.UtcNow,
+        ModifiedAt = DateTime.UtcNow,
+        IsActive = true
+    };
+    
     /// <summary>
     /// Converts a collection of tag entities to their response representation,
     /// implementing proper sorting and data projection.

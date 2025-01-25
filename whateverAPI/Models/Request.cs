@@ -253,3 +253,20 @@ public record AssignRoleRequest
         }
     }
 }
+
+public record CreateRoleRequest
+{
+    public required string Name { get; init; }
+    public string? Description { get; init; }
+
+    public class Validator : AbstractValidator<CreateRoleRequest>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.Name)
+                .NotEmpty()
+                .MinimumLength(2)
+                .MaximumLength(50);
+        }
+    }
+}
