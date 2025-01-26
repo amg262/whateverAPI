@@ -3,19 +3,21 @@
 public static class Helper
 {
     public const string JokeTagsTableName = "JokeTags";
-    public const string UserRolesTable = "UserRole";
+
+    public const string DefaultConnection = "DefaultConnection";
+    public const string ProductionConnection = "ProductionConnection";
 
     public const string TokenCookie = "whateverToken";
-    public const string CorsPolicy = "CorsPolicy";
     public const string DefaultPolicy = "DefaultPolicy";
+
     public const string AuthToken =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYXNkZmFzZGZhc2ZkIiwic3ViIjoiYXNkZmFzZGZAYS" +
-        "5jb20iLCJqdGkiOiIwMTk0NGNmOS02MGNjLTcwMWQtOWVjNi05Y2JlNGZiZjViYTAiLCJpYXQiOjE3MzY0NTgxOTksI" +
-        "mlwIjoiOjoxIiwibmJmIjoxNzM2NDU4MTk5LCJleHAiOjI1MzQwMjMwMDgwMCwiaXNzIjoiY3Jpc2lzLXByZXZlbnRp" +
-        "b24taW5zdGl0dXRlIiwiYXVkIjoiY3BpLXN3ZS1kZXYifQ.tjhEbPrUWBh3d47lk9_FN3owIiQUL_7SA6O05P5Yy7E";
-    
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTk0YTRiOS0yYWYzLTc0N2ItOGRkZi0zZWZjZjA1MDk5ZmYiLCJuYW1lIjo" +
+        "iYUBhLmNvbSIsImVtYWlsIjoiYW5keSIsImp0aSI6IjAxOTRhNGI5LTQxNjItNzRmMi04OTRkLWIwZjEzNDc4YmU1YiIsImlhdCI6MTczNzk" +
+        "zMDQyMSwiaXAiOiI6OjEiLCJwcm92aWRlciI6ImxvY2FsIiwicm9sZSI6InVzZXIiLCJuYmYiOjE3Mzc5MzA0MjEsImV4cCI6MjUzNDAyMzA" +
+        "wODAwLCJpc3MiOiJjcmlzaXMtcHJldmVudGlvbi1pbnN0aXR1dGUiLCJhdWQiOiJjcGktc3dlLWRldiJ9.-zqFM-H_-LlNcjVcOQ-UwblSua" +
+        "7cFfjsT3JQm62kxCM";
+
     public const string MicrosoftProvider = "microsoft";
     public const string GoogleProvider = "google";
     public const string FacebookProvider = "facebook";
-    
 }

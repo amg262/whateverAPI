@@ -23,11 +23,12 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), o =>
-        o.EnableRetryOnFailure()).EnableDetailedErrors().EnableSensitiveDataLogging());
-
 builder.Services
+    .AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString(Helper.DefaultConnection), o =>
+            o.EnableRetryOnFailure())
+            .EnableDetailedErrors()
+            .EnableSensitiveDataLogging())
     .AddCors(options =>
     {
         var corsOptions = builder.Configuration.GetSection(nameof(CorsOptions)).Get<CorsOptions>();
