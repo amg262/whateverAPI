@@ -207,9 +207,11 @@ public record FilterRequest
 /// </summary>
 public record UserLoginRequest
 {
-    public string Username { get; init; }
+    // public string Username { get; init; }
     public string Email { get; init; }
-    public string Password { get; init; }
+    // public string Password { get; init; }
+
+    public string Name { get; set; }
 
     /// <summary>
     /// Validates login requests to ensure security and data quality.
@@ -218,17 +220,21 @@ public record UserLoginRequest
     {
         public Validator()
         {
-            RuleFor(x => x.Username)
-                .NotEmpty().WithMessage("Username is required")
-                .MinimumLength(3).WithMessage("Username must be at least 3 characters long");
+            // RuleFor(x => x.Username)
+            //     .NotEmpty().WithMessage("Username is required")
+            //     .MinimumLength(3).WithMessage("Username must be at least 3 characters long");
+            
+            RuleFor(x => x.Name)
+                .NotEmpty().WithMessage("Name is required")
+                .MinimumLength(2).WithMessage("Username must be at least 2 characters long");
 
             RuleFor(x => x.Email)
                 .NotEmpty().WithMessage("Email is required")
                 .EmailAddress().WithMessage("Invalid email format");
 
-            RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("Password is required")
-                .MinimumLength(6).WithMessage("Password must be at least 6 characters long");
+            // RuleFor(x => x.Password)
+            //     .NotEmpty().WithMessage("Password is required")
+            //     .MinimumLength(6).WithMessage("Password must be at least 6 characters long");
         }
     }
 }

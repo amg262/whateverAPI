@@ -7,6 +7,7 @@ public static class Helper
 
     public const string TokenCookie = "whateverToken";
     public const string CorsPolicy = "CorsPolicy";
+    public const string DefaultPolicy = "DefaultPolicy";
     public const string AuthToken =
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiYXNkZmFzZGZhc2ZkIiwic3ViIjoiYXNkZmFzZGZAYS" +
         "5jb20iLCJqdGkiOiIwMTk0NGNmOS02MGNjLTcwMWQtOWVjNi05Y2JlNGZiZjViYTAiLCJpYXQiOjE3MzY0NTgxOTksI" +

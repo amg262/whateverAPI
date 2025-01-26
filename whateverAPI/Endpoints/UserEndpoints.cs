@@ -14,15 +14,16 @@ public class UserEndpoints : IEndpoints
 
         // User Login
         userGroup.MapPost("/login", async Task<IResult> (
-                [FromBody] UserLoginRequest request, 
-                IJwtTokenService jwtTokenService, 
+                [FromBody] UserLoginRequest request,
+                IJwtTokenService jwtTokenService,
                 HttpContext context) =>
-                {
-                    var jwtToken = await jwtTokenService.GenerateToken(request.Username, request.Email, request.Email, "local");
-                    return !string.IsNullOrEmpty(jwtToken)
-                        ? TypedResults.Ok(new { request.Username, Token = jwtToken })
-                        : context.CreateUnauthorizedProblem("Invalid credentials provided");
-                })
+            {
+                var jwtToken =
+                    await jwtTokenService.GenerateToken(Guid.CreateVersion7().ToString(), request.Email, request.Name, "local");
+                return !string.IsNullOrEmpty(jwtToken)
+                    ? TypedResults.Ok(new { request.Email, Token = jwtToken })
+                    : context.CreateUnauthorizedProblem("Invalid credentials provided");
+            })
             .WithName("UserLogin")
             .WithDescription("Authenticates a user and returns a JWT token for subsequent requests")
             .WithSummary("Login user")
@@ -36,7 +37,7 @@ public class UserEndpoints : IEndpoints
 
         // User Logout
         userGroup.MapPost("/logout", async Task<IResult> (
-                [FromServices] IJwtTokenService jwtTokenService, 
+                [FromServices] IJwtTokenService jwtTokenService,
                 HttpContext context) =>
             {
                 var token = jwtTokenService.GetToken();
