@@ -17,11 +17,13 @@ using whateverAPI.Options;
 using whateverAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
 builder.Configuration
     .SetBasePath(builder.Environment.ContentRootPath)
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
+
 
 builder.Services
     .AddDbContext<AppDbContext>(options =>
@@ -32,23 +34,16 @@ builder.Services
     .AddCors(options =>
     {
         var corsOptions = builder.Configuration.GetSection(nameof(CorsOptions)).Get<CorsOptions>();
-
         options.AddPolicy(Helper.DefaultPolicy, policyBuilder =>
         {
             var policy = policyBuilder
                 .WithOrigins(corsOptions?.AllowedOrigins ?? ["*"])
                 .WithMethods(corsOptions?.AllowedMethods ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
                 .WithHeaders(corsOptions?.AllowedHeaders ?? ["*"]);
-
-            // Handle credentials - cannot use AllowCredentials with AllowAnyOrigin
             if (corsOptions?.AllowCredentials ?? true)
-            {
                 policy.AllowCredentials();
-            }
             else
-            {
                 policy.AllowAnyOrigin();
-            }
         });
     })
     .AddApplicationInsightsTelemetry()
@@ -76,7 +71,6 @@ builder.Services
             ValidateActor = true,
             RequireSignedTokens = true,
         };
-
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -113,6 +107,7 @@ builder.Services.AddOptions<FacebookOptions>().BindConfiguration(nameof(Facebook
 builder.Services.AddOptions<JokeApiOptions>().BindConfiguration(nameof(JokeApiOptions));
 builder.Services.AddOptions<CorsOptions>().BindConfiguration(nameof(CorsOptions));
 
+
 builder.Services
     .AddSingleton<ProblemDetailsConfig>()
     .AddScoped(typeof(ValidationFilter<>))
@@ -125,6 +120,7 @@ builder.Services
     .AddScoped<TagService>()
     .AddScoped<JokeApiService>()
     .AddScoped<RoleService>();
+
 
 builder.Services.AddHttpClient<IGoogleAuthService, GoogleAuthService>().AddStandardResilienceHandler();
 builder.Services.AddHttpClient<IMicrosoftAuthService, MicrosoftAuthService>().AddStandardResilienceHandler();
