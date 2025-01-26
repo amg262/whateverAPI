@@ -191,7 +191,7 @@ public class JwtTokenService : IJwtTokenService
             // new("uid", userId ?? "Unknown"),
         };
         
-        var role = await _roleService.GetUserRoleAsync(Guid.Parse(userId));
+        var role = await _roleService.GetUserRoleAsync(Guid.TryParse(userId, out var id) ? id : Guid.Empty);
 
         claims.Add(role != null 
             ? new Claim(ClaimTypes.Role, role.Name) 
