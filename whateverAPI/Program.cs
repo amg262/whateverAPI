@@ -73,31 +73,32 @@ builder.Services
         policy.RequireAuthenticatedUser());
 
 
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddControllers();
-builder.Services.AddOpenApi();
-
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-builder.Services.AddExceptionHandler<GlobalException>();
+builder.Services
+    .AddOpenApi()
+    .AddHttpContextAccessor()
+    .AddConnections()
+    .AddValidatorsFromAssemblyContaining<Program>()
+    .AddExceptionHandler<GlobalException>();
+    
 
 builder.Services.AddOptions<JwtOptions>().BindConfiguration(nameof(JwtOptions));
 builder.Services.AddOptions<GoogleOptions>().BindConfiguration(nameof(GoogleOptions));
 builder.Services.AddOptions<MicrosoftOptions>().BindConfiguration(nameof(MicrosoftOptions));
 builder.Services.AddOptions<FacebookOptions>().BindConfiguration(nameof(FacebookOptions));
+builder.Services.AddOptions<JokeApiOptions>().BindConfiguration(nameof(JokeApiOptions));
 
-builder.Services.AddSingleton<ProblemDetailsConfig>();
-
-builder.Services.AddScoped(typeof(ValidationFilter<>));
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
-builder.Services.AddScoped<IMicrosoftAuthService, MicrosoftAuthService>();
-builder.Services.AddScoped<IFacebookAuthService, FacebookAuthService>();
-
-builder.Services.AddScoped<UserService>();
-builder.Services.AddScoped<JokeService>();
-builder.Services.AddScoped<TagService>();
-builder.Services.AddScoped<JokeApiService>();
-builder.Services.AddScoped<RoleService>();
+builder.Services
+    .AddSingleton<ProblemDetailsConfig>()
+    .AddScoped(typeof(ValidationFilter<>))
+    .AddScoped<IJwtTokenService, JwtTokenService>()
+    .AddScoped<IGoogleAuthService, GoogleAuthService>()
+    .AddScoped<IMicrosoftAuthService, MicrosoftAuthService>()
+    .AddScoped<IFacebookAuthService, FacebookAuthService>()
+    .AddScoped<UserService>()
+    .AddScoped<JokeService>()
+    .AddScoped<TagService>()
+    .AddScoped<JokeApiService>()
+    .AddScoped<RoleService>();
 
 builder.Services.AddHttpClient<IGoogleAuthService, GoogleAuthService>().AddStandardResilienceHandler();
 builder.Services.AddHttpClient<IMicrosoftAuthService, MicrosoftAuthService>().AddStandardResilienceHandler();
@@ -144,7 +145,7 @@ if (app.Environment.IsDevelopment() || !app.Environment.IsDevelopment())
     });
 }
 
-// app.UseExceptionHandler();
+app.UseExceptionHandler();
 // app.UseStatusCodePages();
 
 app.UseHttpsRedirection();
