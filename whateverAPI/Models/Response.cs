@@ -14,8 +14,11 @@ public record JokeResponse
     public int? LaughScore { get; init; }
     public bool IsActive { get; init; }
     public string? UserId { get; init; }
+    
+    public string? UserName { get; init; }
+    
+    public string? UserEmail { get; init; }
 
-    // public User? User { get; init; }
 }
 
 public record TagResponse

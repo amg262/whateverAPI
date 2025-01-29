@@ -111,48 +111,35 @@ public class JokeService //: IJokeService
     /// <exception cref="DuplicateNameException">Thrown when identical joke content already exists</exception>
     public async Task<Joke> CreateJoke(Joke joke, CancellationToken ct = default)
     {
-        try
+        var jokeExists = await _db.Jokes
+            .AnyAsync(j => j.Content
+                .ToLower()
+                .Trim() == joke.Content
+                .ToLower()
+                .Trim(), ct);
+
+        if (jokeExists) throw new DuplicateNameException("Joke with the same content already exists");
+
+        if (joke.Tags?.Count > 0)
         {
-            var jokeExists = await _db.Jokes
-                .AnyAsync(j => j.Content
-                    .ToLower()
-                    .Trim() == joke.Content
-                    .ToLower()
-                    .Trim(), ct);
+            var newTags = joke.Tags.ToList();
+            joke.Tags.Clear();
 
-            if (jokeExists) throw new DuplicateNameException("Joke with the same content already exists");
-
-            if (joke.Tags?.Count > 0)
+            foreach (var tag in newTags)
             {
-                var newTags = joke.Tags.ToList();
-                joke.Tags.Clear();
-
-                foreach (var tag in newTags)
-                {
-                    var tagEntity = await _tagService.CreateOrFindTagAsync(tag.Name, ct);
-                    joke.Tags.Add(tagEntity);
-                }
+                var tagEntity = await _tagService.CreateOrFindTagAsync(tag.Name, ct);
+                joke.Tags.Add(tagEntity);
             }
+        }
 
-            _db.Jokes.Add(joke);
-            await _db.SaveChangesAsync(ct);
+        _db.Jokes.Add(joke);
+        await _db.SaveChangesAsync(ct);
 
-            return await _db.Jokes
-                .Include(j => j.Tags)
-                .Include(j => j.User)
-                .AsNoTracking()
-                .FirstAsync(j => j.Id == joke.Id, ct);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("Operation cancelled while creating joke");
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating joke: {Content}", joke.Content);
-            throw;
-        }
+        return await _db.Jokes
+            .Include(j => j.Tags)
+            .Include(j => j.User)
+            .AsNoTracking()
+            .FirstAsync(j => j.Id == joke.Id, ct);
     }
 
     /// <summary>
@@ -166,80 +153,56 @@ public class JokeService //: IJokeService
     /// </remarks>
     public async Task<Joke?> GetRandomJoke(CancellationToken ct = default)
     {
-        try
+        var count = await _db.Jokes.CountAsync(ct);
+        if (count == 0)
         {
-            var count = await _db.Jokes.CountAsync(ct);
-            if (count == 0)
-            {
-                _logger.LogInformation("No jokes available for random selection");
-                return null;
-            }
-
-            var random = new Random();
-            var skipCount = random.Next(count);
-
-            var joke = await _db.Jokes
-                .Include(j => j.Tags)
-                .AsNoTracking()
-                .Skip(skipCount)
-                .FirstOrDefaultAsync(ct);
-
-            if (joke != null)
-            {
-                _logger.LogInformation("Retrieved random joke with ID: {JokeId}", joke.Id);
-            }
-
-            return joke;
+            _logger.LogInformation("No jokes available for random selection");
+            return null;
         }
-        catch (OperationCanceledException)
+
+        var random = new Random();
+        var skipCount = random.Next(count);
+
+        var joke = await _db.Jokes
+            .Include(j => j.Tags)
+            .Include(j => j.User)
+            .AsNoTracking()
+            .Skip(skipCount)
+            .FirstOrDefaultAsync(ct);
+
+        if (joke != null)
         {
-            _logger.LogInformation("Operation cancelled while retrieving random joke");
-            throw;
+            _logger.LogInformation("Retrieved random joke with ID: {JokeId}", joke.Id);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving random joke");
-            throw;
-        }
+
+        return joke;
     }
 
 
     public Task<List<Joke>> GetJokesByType(JokeType type, int? pageSize = null, int? pageNumber = null, string? sortBy = null,
         bool sortDescending = false, CancellationToken ct = default)
     {
-        try
-        {
-            var query = _db.Jokes
-                .Include(j => j.Tags)
-                .AsNoTracking()
-                .Where(j => j.Type == type);
+        var query = _db.Jokes
+            .Include(j => j.Tags)
+            .Include(j => j.User)
+            .AsNoTracking()
+            .Where(j => j.Type == type);
 
-            if (!string.IsNullOrEmpty(sortBy))
+        if (!string.IsNullOrEmpty(sortBy))
+        {
+            Expression<Func<Joke, object>> keySelector = sortBy.ToLower() switch
             {
-                Expression<Func<Joke, object>> keySelector = sortBy.ToLower() switch
-                {
-                    "createdat" => j => j.CreatedAt,
-                    "laughscore" => j => j.LaughScore ?? 0,
-                    "content" => j => j.Content,
-                    _ => j => j.CreatedAt
-                };
-                query = query.ApplySorting(keySelector, sortDescending);
-            }
+                "createdat" => j => j.CreatedAt,
+                "laughscore" => j => j.LaughScore ?? 0,
+                "content" => j => j.Content,
+                _ => j => j.CreatedAt
+            };
+            query = query.ApplySorting(keySelector, sortDescending);
+        }
 
-            query = query.ApplyPaging(pageNumber, pageSize);
+        query = query.ApplyPaging(pageNumber, pageSize);
 
-            return query.ToListAsync(ct);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("Operation cancelled while retrieving jokes by type");
-            throw;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
+        return query.ToListAsync(ct);
     }
 
     /// <summary>
@@ -253,43 +216,31 @@ public class JokeService //: IJokeService
     /// </remarks>
     public async Task<List<Joke>> GetJokesByType(FilterRequest request, CancellationToken ct = default)
     {
-        try
-        {
-            var query = _db.Jokes
-                .Include(j => j.Tags)
-                .AsNoTracking()
-                .Where(j => j.Type == request.Type);
+        var query = _db.Jokes
+            .Include(j => j.Tags)
+            .Include(j => j.User)
+            .AsNoTracking()
+            .Where(j => j.Type == request.Type);
 
-            if (!string.IsNullOrEmpty(request.SortBy))
+        if (!string.IsNullOrEmpty(request.SortBy))
+        {
+            Expression<Func<Joke, object>> keySelector = request.SortBy.ToLower() switch
             {
-                Expression<Func<Joke, object>> keySelector = request.SortBy.ToLower() switch
-                {
-                    "createdat" => j => j.CreatedAt,
-                    "laughscore" => j => j.LaughScore ?? 0,
-                    "content" => j => j.Content,
-                    _ => j => j.CreatedAt
-                };
-                query = query.ApplySorting(keySelector, request.SortDescending);
-            }
-
-            query = query.ApplyPaging(request.PageNumber, request.PageSize);
-
-            var result = await query.ToListAsync(ct);
-
-            _logger.LogInformation("Retrieved {Count} jokes of type {Type}", result.Count, request.Type);
-
-            return result;
+                "createdat" => j => j.CreatedAt,
+                "laughscore" => j => j.LaughScore ?? 0,
+                "content" => j => j.Content,
+                _ => j => j.CreatedAt
+            };
+            query = query.ApplySorting(keySelector, request.SortDescending);
         }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("Operation cancelled while retrieving jokes by type");
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving jokes by type: {Type}", request.Type);
-            throw;
-        }
+
+        query = query.ApplyPaging(request.PageNumber, request.PageSize);
+
+        var result = await query.ToListAsync(ct);
+
+        _logger.LogInformation("Retrieved {Count} jokes of type {Type}", result.Count, request.Type);
+
+        return result;
     }
 
     /// <summary>
@@ -324,27 +275,16 @@ public class JokeService //: IJokeService
     /// <returns>The requested joke with its tags if found; otherwise, null</returns>
     public async Task<Joke?> GetJokeById(Guid id, CancellationToken ct = default)
     {
-        try
-        {
-            var joke = await _db.Jokes.Include(j => j.Tags)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(j => j.Id == id, ct);
+        var joke = await _db.Jokes
+            .Include(j => j.Tags)
+            .Include(j => j.User)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(j => j.Id == id, ct);
 
-            if (joke != null) return joke;
+        if (joke != null) return joke;
 
-            _logger.LogInformation("Joke with ID {JokeId} not found", id);
-            return null;
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("Operation cancelled while retrieving joke by ID");
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving joke with ID: {JokeId}", id);
-            throw;
-        }
+        _logger.LogInformation("Joke with ID {JokeId} not found", id);
+        return null;
     }
 
     /// <summary>
@@ -355,31 +295,18 @@ public class JokeService //: IJokeService
     /// <returns>True if the joke was successfully deleted; false if the joke wasn't found</returns>
     public async Task<bool> DeleteJoke(Guid id, CancellationToken ct = default)
     {
-        try
-        {
-            var joke = await _db.Jokes.FirstOrDefaultAsync(j => j.Id == id, ct);
+        var joke = await _db.Jokes.FirstOrDefaultAsync(j => j.Id == id, ct);
 
-            if (joke == null)
-            {
-                _logger.LogInformation("Joke with ID {JokeId} not found", id);
-                return false;
-            }
-
-            _db.Jokes.Remove(joke);
-            await _db.SaveChangesAsync(ct);
-
-            return true;
-        }
-        catch (OperationCanceledException)
+        if (joke == null)
         {
-            _logger.LogInformation("Operation cancelled while deleting joke");
-            throw;
+            _logger.LogInformation("Joke with ID {JokeId} not found", id);
+            return false;
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting joke with ID: {JokeId}", id);
-            throw;
-        }
+
+        _db.Jokes.Remove(joke);
+        await _db.SaveChangesAsync(ct);
+
+        return true;
     }
 
     /// <summary>
@@ -399,7 +326,11 @@ public class JokeService //: IJokeService
     /// <param name="ct">Cancellation token for operation cancellation</param>
     /// <returns>A list of all jokes with their associated tags</returns>
     public async Task<List<Joke>?> GetJokesAsync(CancellationToken ct = default) =>
-        await _db.Jokes.Include(j => j.Tags).AsNoTracking().ToListAsync(ct);
+        await _db.Jokes
+            .Include(j => j.Tags)
+            .Include(j => j.User)
+            .AsNoTracking()
+            .ToListAsync(ct);
 
     /// <summary>
     /// Updates an existing joke entity with partial update support and tag management.
@@ -409,48 +340,36 @@ public class JokeService //: IJokeService
     /// <returns>The updated joke if found and updated; otherwise, null</returns>
     public async Task<Joke?> UpdateJoke(Joke? joke, CancellationToken ct = default)
     {
-        try
+        if (joke == null) return null;
+
+        var existingJoke = await _db.Jokes
+            .Include(j => j.Tags)
+            .Include(j => j.User)
+            .FirstOrDefaultAsync(j => j.Id == joke.Id, ct);
+
+        if (existingJoke == null)
         {
-            if (joke == null) return null;
+            _logger.LogInformation("Joke with ID {JokeId} not found", joke.Id);
+            return null;
+        }
 
-            var existingJoke = await _db.Jokes
-                .Include(j => j.Tags)
-                .FirstOrDefaultAsync(j => j.Id == joke.Id, ct);
+        existingJoke.MapObject<Joke>(joke);
 
-            if (existingJoke == null)
+        if (joke.Tags?.Count > 0)
+        {
+            var newTags = joke.Tags.ToList();
+            existingJoke.Tags?.Clear();
+
+            foreach (var tag in newTags)
             {
-                _logger.LogInformation("Joke with ID {JokeId} not found", joke.Id);
-                return null;
+                var tagEntity = await _tagService.CreateOrFindTagAsync(tag.Name, ct);
+                existingJoke?.Tags?.Add(tagEntity);
             }
-
-            existingJoke.MapObject<Joke>(joke);
-
-            if (joke.Tags?.Count > 0)
-            {
-                var newTags = joke.Tags.ToList();
-                existingJoke.Tags?.Clear();
-
-                foreach (var tag in newTags)
-                {
-                    var tagEntity = await _tagService.CreateOrFindTagAsync(tag.Name, ct);
-                    existingJoke?.Tags?.Add(tagEntity);
-                }
-            }
-
-            await _db.SaveChangesAsync(ct);
-
-            return existingJoke;
         }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("Operation cancelled while updating joke");
-            throw;
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Error updating joke with ID: {JokeId}", joke?.Id);
-            throw;
-        }
+
+        await _db.SaveChangesAsync(ct);
+
+        return existingJoke;
     }
 
     /// <summary>
@@ -478,28 +397,16 @@ public class JokeService //: IJokeService
     /// <returns>A list of jokes matching the search criteria in either content or tags</returns>
     public async Task<List<Joke>?> SearchJokes(string query, CancellationToken ct = default)
     {
-        try
-        {
-            if (string.IsNullOrEmpty(query)) return [];
+        if (string.IsNullOrEmpty(query)) return [];
 
-            query = query.ToLower().Trim();
+        query = query.ToLower().Trim();
 
-            return await _db.Jokes
-                .Include(j => j.Tags)
-                .Where(joke => joke.Content.Contains(query) ||
-                               joke.Tags.Any(t => t.Name.Contains(query)))
-                .ToListAsync(ct);
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("Operation cancelled while searching jokes");
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error searching jokes with query: {Query}", query);
-            throw;
-        }
+        return await _db.Jokes
+            .Include(j => j.Tags)
+            .Include(j => j.User)
+            .Where(joke => joke.Content.Contains(query) ||
+                           joke.Tags.Any(t => t.Name.Contains(query)))
+            .ToListAsync(ct);
     }
 
     /// <summary>
@@ -523,64 +430,49 @@ public class JokeService //: IJokeService
     /// <returns>A filtered and sorted list of jokes matching the criteria</returns>
     public async Task<List<Joke>> SearchAndFilter(FilterRequest request, CancellationToken ct = default)
     {
-        try
+        // Start with the base query including tags
+        var query = _db.Jokes
+            .Include(j => j.Tags)
+            .Include(j => j.User)
+            .AsNoTracking();
+
+        // Apply type filter if specified
+        if (request.Type != null)
+            query = query.Where(j => j.Type == request.Type);
+
+        // Apply text search if query is provided
+        if (!string.IsNullOrWhiteSpace(request.Query))
         {
-            // Start with the base query including tags
-            var query = _db.Jokes
-                .Include(j => j.Tags)
-                .AsNoTracking();
-
-            // Apply type filter if specified
-            if (request.Type != null)
-                query = query.Where(j => j.Type == request.Type);
-
-            // Apply text search if query is provided
-            if (!string.IsNullOrWhiteSpace(request.Query))
-            {
-                var searchTerm = request.Query.ToLower().Trim();
-                query = query.Where(joke =>
-                    joke.Content.ToLower().Contains(searchTerm) ||
-                    joke.Tags.Any(t => t.Name.ToLower().Contains(searchTerm)));
-            }
-
-            if (request.Active.HasValue)
-            {
-                query = query.Where(j => j.IsActive == request.Active);
-            }
-
-            // Apply sorting based on request
-            query = !string.IsNullOrEmpty(request.SortBy)
-                ? query.ApplySortingWithTags(request.SortBy, request.SortDescending ?? false)
-                : query.OrderByDescending(j => j.CreatedAt); // Default sorting by creation date if no sort specified
-
-
-            // Apply pagination if specified
-            query = query.ApplyPaging(request.PageNumber, request.PageSize);
-
-            // Execute the query and return results
-            var result = await query.ToListAsync(ct);
-
-            _logger.LogInformation(
-                "Search and filter returned {Count} jokes for Type={Type}, Query={Query}, Sort={Sort}",
-                result.Count,
-                request.Type,
-                request.Query ?? "none",
-                request.SortBy ?? "default");
-
-            return result;
+            var searchTerm = request.Query.ToLower().Trim();
+            query = query.Where(joke =>
+                joke.Content.ToLower().Contains(searchTerm) ||
+                joke.Tags.Any(t => t.Name.ToLower().Contains(searchTerm)));
         }
-        catch (OperationCanceledException)
+
+        if (request.Active.HasValue)
         {
-            _logger.LogInformation("Operation cancelled while performing search and filter");
-            throw;
+            query = query.Where(j => j.IsActive == request.Active);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex,
-                "Error performing search and filter: Type={Type}, Query={Query}",
-                request.Type,
-                request.Query);
-            throw;
-        }
+
+        // Apply sorting based on request
+        query = !string.IsNullOrEmpty(request.SortBy)
+            ? query.ApplySortingWithTags(request.SortBy, request.SortDescending ?? false)
+            : query.OrderByDescending(j => j.CreatedAt); // Default sorting by creation date if no sort specified
+
+
+        // Apply pagination if specified
+        query = query.ApplyPaging(request.PageNumber, request.PageSize);
+
+        // Execute the query and return results
+        var result = await query.ToListAsync(ct);
+
+        _logger.LogInformation(
+            "Search and filter returned {Count} jokes for Type={Type}, Query={Query}, Sort={Sort}",
+            result.Count,
+            request.Type,
+            request.Query ?? "none",
+            request.SortBy ?? "default");
+
+        return result;
     }
 }

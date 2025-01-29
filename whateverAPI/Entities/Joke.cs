@@ -40,7 +40,7 @@ public class Joke : IEntity<Guid>
     [ForeignKey(nameof(UserId))] public User? User { get; set; }
 
     public bool IsActive { get; set; } = true;
-    
+
     public static Joke Create(string content, JokeType type, List<Tag> tags, int laughScore, Guid? userId) => new()
     {
         Id = Guid.CreateVersion7(),
@@ -78,7 +78,10 @@ public class Joke : IEntity<Guid>
             .Select(t => t.Name)
             .ToList() ?? [],
         LaughScore = joke.LaughScore,
-        IsActive = joke.IsActive
+        IsActive = joke.IsActive,
+        UserId = joke.UserId.ToString(),
+        UserName = joke.User?.Name,
+        UserEmail = joke.User?.Email,
     }).ToList();
 
     /// <summary>
@@ -96,28 +99,26 @@ public class Joke : IEntity<Guid>
     /// - Default value initialization
     /// - Active status setting
     /// </remarks>
-    public static Joke FromCreateRequest(CreateJokeRequest request, User? user)
+    public static Joke FromCreateRequest(CreateJokeRequest request, User? user) => new()
     {
-        return new Joke
-        {
-            Id = Guid.CreateVersion7(),
-            CreatedAt = DateTime.UtcNow,
-            ModifiedAt = DateTime.UtcNow,
-            Content = request.Content,
-            Type = request.Type,
-            Tags = request.Tags?.Select(tagName =>
-                // We don't want to assign any kind of timestamps of GUIDs here because the TagService will handle that
-                // during joke creation
-                new Tag
-                {
-                    Name = tagName.ToLower().Trim(),
-                }).ToList() ?? [],
-            LaughScore = request.LaughScore,
-            IsActive = true,
-            User = user,
-            UserId = user?.Id
-        };
-    }
+        Id = Guid.CreateVersion7(),
+        CreatedAt = DateTime.UtcNow,
+        ModifiedAt = DateTime.UtcNow,
+        Content = request.Content,
+        Type = request.Type,
+        Tags = request.Tags?.Select(tagName =>
+            // We don't want to assign any kind of timestamps of GUIDs here because the TagService will handle that
+            // during joke creation
+            new Tag
+            {
+                Name = tagName.ToLower().Trim(),
+            }).ToList() ?? [],
+        LaughScore = request.LaughScore,
+        IsActive = true,
+        User = user,
+        UserId = user?.Id,
+    };
+
 
     /// <summary>
     /// Creates a joke entity from an update request, maintaining existing identity
@@ -147,7 +148,7 @@ public class Joke : IEntity<Guid>
                 Name = tagName.ToLower().Trim()
             }).ToList() ?? [],
         LaughScore = request.LaughScore,
-        IsActive = request.IsActive
+        IsActive = request.IsActive,
     };
 
 
@@ -212,8 +213,9 @@ public class Joke : IEntity<Guid>
         ModifiedAt = ModifiedAt,
         LaughScore = LaughScore,
         IsActive = IsActive,
-        UserId = User?.Id.ToString(),
-        //User = User
+        UserId = UserId?.ToString(),
+        UserName = User?.Name,
+        UserEmail = User?.Email,
     };
 
 
