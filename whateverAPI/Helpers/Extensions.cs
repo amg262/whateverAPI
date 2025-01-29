@@ -1,11 +1,95 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
 using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using whateverAPI.Endpoints;
 using whateverAPI.Entities;
 
 namespace whateverAPI.Helpers;
+
+/// <summary>
+/// Provides methods for automatically discovering and mapping endpoints in the application.
+/// Supports both simple single-assembly scanning and more advanced multi-assembly scenarios.
+/// </summary>
+public static class EndpointMapper
+{
+    /// <summary>
+    /// Basic endpoint mapping that scans the assembly containing IEndpoints.
+    /// This is the simplest approach, suitable when all endpoints are in one assembly.
+    /// </summary>
+    public static IEndpointRouteBuilder MapEndpointsFromAssembly(this IEndpointRouteBuilder app)
+    {
+        // Find all non-abstract classes implementing IEndpoints in the same assembly as the interface
+        var endpointTypes = typeof(IEndpoints).Assembly
+            .GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(IEndpoints).IsAssignableFrom(t));
+
+        // Map each endpoint class found
+        foreach (var type in endpointTypes)
+        {
+            // Look for the static MapEndpoints method required by IEndpoints
+            var mapEndpointsMethod = type.GetMethod(nameof(IEndpoints.MapEndpoints), BindingFlags.Public | BindingFlags.Static);
+            mapEndpointsMethod?.Invoke(null, [app]);
+        }
+
+        return app;
+    }
+
+    /// <summary>
+    /// Maps endpoints from the assembly containing the specified type.
+    /// This allows for more flexible endpoint location by specifying a marker type.
+    /// </summary>
+    /// <code>
+    /// app.MapEndpointsFromAssembly<Program/>();
+    /// </code>
+    public static IEndpointRouteBuilder MapEndpointsFromAssembly<T>(this IEndpointRouteBuilder app)
+    {
+        // Use the provided type to locate its assembly
+        var assembly = typeof(T).Assembly;
+        return MapEndpointsFromAssembly(app, assembly);
+    }
+
+    /// <summary>
+    /// Maps endpoints from a specific assembly.
+    /// Useful when you know exactly which assembly contains your endpoints.
+    /// </summary>
+    /// <code>
+    /// app.MapEndpointsFromAssembly(typeof(IEndpoints).Assembly);
+    /// </code>
+    public static IEndpointRouteBuilder MapEndpointsFromAssembly(this IEndpointRouteBuilder app, Assembly assembly)
+    {
+        // Find endpoint classes in the specified assembly
+        var endpointTypes = assembly.GetTypes()
+            .Where(t => t is { IsClass: true, IsAbstract: false } && typeof(IEndpoints).IsAssignableFrom(t));
+
+        foreach (var type in endpointTypes)
+        {
+            var mapEndpointsMethod = type.GetMethod(nameof(IEndpoints.MapEndpoints), BindingFlags.Public | BindingFlags.Static);
+            mapEndpointsMethod?.Invoke(null, [app]);
+        }
+
+        return app;
+    }
+
+    /// <summary>
+    /// Maps endpoints from multiple assemblies.
+    /// Ideal for larger applications with endpoints spread across different modules.
+    /// </summary>
+    /// <code>
+    /// app.MapEndpointsFromAssemblies(typeof(IEndpoints).Assembly,Assembly.GetExecutingAssembly());
+    /// </code>
+    public static IEndpointRouteBuilder MapEndpointsFromAssemblies(this IEndpointRouteBuilder app, params Assembly[] assemblies)
+    {
+        foreach (var assembly in assemblies)
+        {
+            MapEndpointsFromAssembly(app, assembly);
+        }
+
+        return app;
+    }
+}
 
 /// <summary>
 /// Provides extension methods for creating and customizing ProblemDetails responses in ASP.NET Core applications.

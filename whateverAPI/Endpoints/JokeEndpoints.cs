@@ -7,11 +7,6 @@ using whateverAPI.Services;
 
 namespace whateverAPI.Endpoints;
 
-public interface IEndpoints
-{
-    static abstract void MapEndpoints(IEndpointRouteBuilder app);
-}
-
 public class JokeEndpoints : IEndpoints
 {
     public static void MapEndpoints(IEndpointRouteBuilder app)

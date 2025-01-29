@@ -37,7 +37,6 @@ builder.Services
                 .WithHeaders(corsOptions?.AllowedHeaders ?? ["*"]);
             if (corsOptions?.AllowCredentials ?? true)
                 policy.AllowCredentials();
-                // Console.WriteLine("Allowing credentials");
             else
                 policy.AllowAnyOrigin();
         });
@@ -170,10 +169,6 @@ app
 
 await app.InitializeDatabaseRetryAsync();
 
-JokeEndpoints.MapEndpoints(app);
-UserEndpoints.MapEndpoints(app);
-TagEndpoints.MapEndpoints(app);
-RoleEndpoints.MapEndpoints(app);
-AuthEndpoints.MapEndpoints(app);
+app.MapEndpointsFromAssembly();
 
 app.Run();
