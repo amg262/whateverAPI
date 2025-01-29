@@ -40,6 +40,17 @@ public class User
 
     [ForeignKey(nameof(RoleId))] public Role? Role { get; set; }
 
+    public static User Create(string name, string email, Guid? roleId = null) => new()
+    {
+        Id = Guid.CreateVersion7(),
+        Name = name.Trim(),
+        Email = email.ToLower().Trim(),
+        CreatedAt = DateTime.UtcNow,
+        ModifiedAt = DateTime.UtcNow,
+        RoleId = roleId,
+        IsActive = true,
+    };
+    
     // Factory method for creating users from OAuth info
     public static User FromOAuthInfo(OAuthUserInfo userInfo) => new()
     {

@@ -1,18 +1,13 @@
 using System.Net.Http.Headers;
-using System.Security.Claims;
 using System.Text;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
-using whateverAPI;
 using whateverAPI.Data;
 using whateverAPI.Endpoints;
-using whateverAPI.Entities;
 using whateverAPI.Helpers;
-using whateverAPI.Models;
 using whateverAPI.Options;
 using whateverAPI.Services;
 
@@ -42,6 +37,7 @@ builder.Services
                 .WithHeaders(corsOptions?.AllowedHeaders ?? ["*"]);
             if (corsOptions?.AllowCredentials ?? true)
                 policy.AllowCredentials();
+                // Console.WriteLine("Allowing credentials");
             else
                 policy.AllowAnyOrigin();
         });
@@ -96,8 +92,7 @@ builder.Services
     .AddOpenApi()
     .AddHttpContextAccessor()
     .AddValidatorsFromAssemblyContaining<Program>()
-    .AddExceptionHandler<GlobalException>()
-    .AddControllers();
+    .AddExceptionHandler<GlobalException>();
 
 
 builder.Services.AddOptions<JwtOptions>().BindConfiguration(nameof(JwtOptions));
@@ -135,29 +130,43 @@ builder.Services.AddHttpClient<JokeApiService>(client =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment() || !app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference(opts =>
-    {
-        opts.Theme = ScalarTheme.Saturn;
-        opts.WithHttpBearerAuthentication(bearer => { bearer.Token = Helper.AuthToken; });
-        opts.DefaultHttpClient = new KeyValuePair<ScalarTarget, ScalarClient>(ScalarTarget.CSharp, ScalarClient.HttpClient);
-        opts.Favicon = "/favicon.ico";
-        opts.OperationSorter = OperationSorter.Method;
-        opts.TagSorter = TagSorter.Alpha;
-        opts.Layout = ScalarLayout.Modern;
-        opts.DefaultFonts = true;
-        opts.ShowSidebar = true;
-        opts.Title = "Whatever bruh API";
-    });
-}
+if (app.Environment.IsDevelopment()) { }
 
-app.UseExceptionHandler();
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-app.UseAuthentication().UseAuthorization();
-app.MapControllers();
+app.MapOpenApi();
+app.MapScalarApiReference(opts =>
+{
+    opts
+        .WithTheme(ScalarTheme.Saturn)
+        .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient)
+        .WithFavicon("/favicon.ico")
+        .WithOperationSorter(OperationSorter.Method)
+        .WithTagSorter(TagSorter.Alpha)
+        .WithLayout(ScalarLayout.Modern)
+        .WithTitle("Whatever bruh API")
+        .WithDefaultFonts(true)
+        .WithPreferredScheme("Bearer")
+        .WithHttpBasicAuthentication(basic =>
+        {
+            basic.Username = "admin@admin.com";
+            basic.Password = "admin@admin.com";
+        })
+        .WithHttpBearerAuthentication(bearer => bearer.Token = Helper.AuthToken)
+        .WithOAuth2Authentication(oauth =>
+        {
+            oauth.Scopes = ["openid", "email", "profile"];
+            oauth.ClientId = builder.Configuration["GoogleOptions:ClientId"];
+        });
+});
+
+
+
+app
+    .UseExceptionHandler()
+    .UseHttpsRedirection()
+    .UseStaticFiles()
+    .UseAuthentication()
+    .UseAuthorization()
+    .UseCors(Helper.DefaultPolicy);
 
 await app.InitializeDatabaseRetryAsync();
 

@@ -190,11 +190,11 @@ public class JwtTokenService : IJwtTokenService
             new("provider", provider ?? "Unknown"),
             // new("uid", userId ?? "Unknown"),
         };
-        
+
         var role = await _roleService.GetUserRoleAsync(Guid.TryParse(userId, out var id) ? id : Guid.Empty);
 
-        claims.Add(role != null 
-            ? new Claim(ClaimTypes.Role, role.Name) 
+        claims.Add(role != null
+            ? new Claim(ClaimTypes.Role, role.Name)
             : new Claim(ClaimTypes.Role, "user"));
 
         // token descriptor with issuer, audience, expiration, signing credentials, and claims
@@ -222,28 +222,20 @@ public class JwtTokenService : IJwtTokenService
     /// <returns>True if the token is valid; otherwise, false.</returns>
     public bool ValidateToken(string token)
     {
-        try
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
+        var tokenHandler = new JwtSecurityTokenHandler();
 
-            tokenHandler.ValidateToken(token, new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = _options.Issuer,
-                ValidAudience = _options.Audience,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret))
-            }, out var validatedToken);
-
-            return validatedToken != null;
-        }
-        catch (Exception ex)
+        tokenHandler.ValidateToken(token, new TokenValidationParameters
         {
-            _logger.LogError(ex, "Token validation failed: {Token}", token);
-            return false;
-        }
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = _options.Issuer,
+            ValidAudience = _options.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret))
+        }, out var validatedToken);
+
+        return validatedToken != null;
     }
 
     /// <summary>

@@ -40,6 +40,19 @@ public class Joke : IEntity<Guid>
     [ForeignKey(nameof(UserId))] public User? User { get; set; }
 
     public bool IsActive { get; set; } = true;
+    
+    public static Joke Create(string content, JokeType type, List<Tag> tags, int laughScore, Guid? userId) => new()
+    {
+        Id = Guid.CreateVersion7(),
+        Content = content,
+        Type = type,
+        CreatedAt = DateTime.UtcNow,
+        ModifiedAt = DateTime.UtcNow,
+        Tags = tags,
+        LaughScore = laughScore,
+        IsActive = true,
+        UserId = userId
+    };
 
     /// <summary>
     /// Converts a collection of joke entities to their response representation,
@@ -73,6 +86,7 @@ public class Joke : IEntity<Guid>
     /// domain object construction with consistent data initialization.
     /// </summary>
     /// <param name="request">The API request containing new joke data</param>
+    /// <param name="user"></param>
     /// <returns>A fully initialized joke entity ready for persistence</returns>
     /// <remarks>
     /// This factory method ensures:
