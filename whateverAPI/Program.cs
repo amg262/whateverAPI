@@ -21,6 +21,10 @@ builder.Configuration
 
 
 builder.Services
+    .AddOpenApi()
+    .AddHttpContextAccessor()
+    .AddValidatorsFromAssemblyContaining<Program>()
+    .AddExceptionHandler<GlobalException>()
     .AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString(Helper.DefaultConnection), o =>
                 o.EnableRetryOnFailure())
@@ -89,13 +93,6 @@ builder.Services
             context.User.IsInRole("moderator")))
     .AddPolicy("RequireAuthenticatedUser", policy =>
         policy.RequireAuthenticatedUser());
-
-
-builder.Services
-    .AddOpenApi()
-    .AddHttpContextAccessor()
-    .AddValidatorsFromAssemblyContaining<Program>()
-    .AddExceptionHandler<GlobalException>();
 
 
 builder.Services.AddOptions<JwtOptions>().BindConfiguration(nameof(JwtOptions));
