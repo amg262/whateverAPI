@@ -23,7 +23,7 @@ builder.Configuration
 builder.Services
     .AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString(Helper.DefaultConnection), o =>
-            o.EnableRetryOnFailure())
+                o.EnableRetryOnFailure())
             .EnableDetailedErrors()
             .EnableSensitiveDataLogging())
     .AddCors(options =>
@@ -32,7 +32,11 @@ builder.Services
         options.AddPolicy(Helper.DefaultPolicy, policyBuilder =>
         {
             var policy = policyBuilder
-                .WithOrigins(corsOptions?.AllowedOrigins ?? ["*"])
+                .WithOrigins(corsOptions?.AllowedOrigins ??
+                [
+                    "https://localhost:8081",
+                    "https://whateverbruh.azurewebsites.net"
+                ])
                 .WithMethods(corsOptions?.AllowedMethods ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
                 .WithHeaders(corsOptions?.AllowedHeaders ?? ["*"]);
             if (corsOptions?.AllowCredentials ?? true)
@@ -129,7 +133,9 @@ builder.Services.AddHttpClient<JokeApiService>(client =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment()) { }
+if (app.Environment.IsDevelopment())
+{
+}
 
 app.MapOpenApi();
 app.MapScalarApiReference(opts =>
@@ -156,7 +162,6 @@ app.MapScalarApiReference(opts =>
             oauth.ClientId = builder.Configuration["GoogleOptions:ClientId"];
         });
 });
-
 
 
 app
