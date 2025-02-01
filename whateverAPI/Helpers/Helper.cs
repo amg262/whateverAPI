@@ -20,4 +20,12 @@ public static class Helper
     public const string MicrosoftProvider = "microsoft";
     public const string GoogleProvider = "google";
     public const string FacebookProvider = "facebook";
+    
+    public const string AdminRole = "admin";
+    public const string ModeratorRole = "moderator";
+    public const string UserRole = "user";
+
+    public const string RequireAdmin = "RequireAdmin";
+    public const string RequireAuthenticatedUser = "RequireAuthenticatedUser";
+    public const string RequireModeratorOrAbove = "RequireModeratorOrAbove";
 }

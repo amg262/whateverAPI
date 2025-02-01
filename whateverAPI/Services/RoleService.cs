@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using whateverAPI.Data;
 using whateverAPI.Entities;
+using whateverAPI.Helpers;
 
 namespace whateverAPI.Services;
 
@@ -102,12 +103,13 @@ public class RoleService
         await _db.Users.AnyAsync(u => u.Id == userId && u.Role!.Name.ToLower() == roleName.ToLower(), ct);
 
 
-    public async Task<bool> IsAdminAsync(Guid userId, CancellationToken ct = default) => await HasRoleAsync(userId, "admin", ct);
+    public async Task<bool> IsAdminAsync(Guid userId, CancellationToken ct = default) =>
+        await HasRoleAsync(userId, Helper.AdminRole, ct);
 
 
     public async Task<bool> IsModeratorOrAboveAsync(Guid userId, CancellationToken ct = default)
     {
-        var allowedRoles = new[] { "admin", "moderator" };
+        var allowedRoles = new[] { Helper.AdminRole, Helper.ModeratorRole };
         return await _db.Users.AnyAsync(u => u.Id == userId && allowedRoles.Contains(u.Role!.Name.ToLower()), ct);
     }
 }

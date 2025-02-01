@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Polly;
 using whateverAPI.Entities;
+using whateverAPI.Helpers;
 
 namespace whateverAPI.Data;
 
@@ -104,17 +105,17 @@ public static class DbInitializer
         }
 
         // Create roles first
-        var adminRole = Role.Create("admin", "Full system access");
-        var modRole = Role.Create("moderator", "Content management access");
-        var userRole = Role.Create("user", "Basic user access");
+        var adminRole = Role.Create(Helper.AdminRole, "Full system access");
+        var modRole = Role.Create(Helper.ModeratorRole, "Content management access");
+        var userRole = Role.Create(Helper.UserRole, "Basic user access");
 
         context.Roles.AddRange(adminRole, modRole, userRole);
         await context.SaveChangesAsync();
 
         // Create users with their roles
-        var adminUser = User.Create("admin", "admin@admin.com", adminRole.Id);
-        var modUser = User.Create("moderator", "mod@mod.com", modRole.Id);
-        var normalUser = User.Create("user", "user@user.com", userRole.Id);
+        var adminUser = User.Create(Helper.AdminRole, $"{Helper.AdminRole}@{Helper.AdminRole}.com", adminRole.Id);
+        var modUser = User.Create(Helper.ModeratorRole, $"{Helper.ModeratorRole}@{Helper.ModeratorRole}.com", modRole.Id);
+        var normalUser = User.Create(Helper.UserRole, $"{Helper.UserRole}@{Helper.UserRole}.com", userRole.Id);
 
         context.Users.AddRange(adminUser, modUser, normalUser);
         await context.SaveChangesAsync();
@@ -125,7 +126,7 @@ public static class DbInitializer
 
         context.Tags.AddRange(darkTag, existentialTag);
         await context.SaveChangesAsync();
-        
+
         var users = context.Users.ToList();
         var random = new Random();
 

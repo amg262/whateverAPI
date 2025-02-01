@@ -13,12 +13,8 @@ public record JokeResponse
     public List<string>? Tags { get; init; } = [];
     public int? LaughScore { get; init; }
     public bool IsActive { get; init; }
-    public string? UserId { get; init; }
     
-    public string? UserName { get; init; }
-    
-    public string? UserEmail { get; init; }
-
+    public UserAuthor? Author { get; init; }
 }
 
 public record TagResponse
@@ -173,4 +169,11 @@ public record FacebookPicture
 public record FacebookPictureData
 {
     [JsonPropertyName("url")] public string Url { get; init; } = "";
+}
+
+public record UserAuthor
+{
+    public required Guid Id { get; set; }
+    public required string Name { get; set; }
+    public required string Email { get; set; }
 }

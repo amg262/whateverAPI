@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using whateverAPI.Data;
-using whateverAPI.Endpoints;
 using whateverAPI.Helpers;
 using whateverAPI.Options;
 using whateverAPI.Services;
@@ -35,18 +34,18 @@ builder.Services
         var corsOptions = builder.Configuration.GetSection(nameof(CorsOptions)).Get<CorsOptions>();
         options.AddPolicy(Helper.DefaultPolicy, policyBuilder =>
         {
-            var policy = policyBuilder
-                .WithOrigins(corsOptions?.AllowedOrigins ??
-                [
-                    "https://localhost:8081",
-                    "https://whateverbruh.azurewebsites.net"
-                ])
-                .WithMethods(corsOptions?.AllowedMethods ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
-                .WithHeaders(corsOptions?.AllowedHeaders ?? ["*"]);
-            if (corsOptions?.AllowCredentials ?? true)
-                policy.AllowCredentials();
+            if (builder.Environment.IsDevelopment())
+            {
+                policyBuilder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+            }
             else
-                policy.AllowAnyOrigin();
+            {
+                policyBuilder
+                    .WithOrigins(corsOptions?.AllowedOrigins ?? ["https://whateverbruh.azurewebsites.net"])
+                    .WithMethods(corsOptions?.AllowedMethods ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+                    .WithHeaders(corsOptions?.AllowedHeaders ?? ["*"])
+                    .AllowCredentials();
+            }
         });
     })
     .AddApplicationInsightsTelemetry()
@@ -84,14 +83,13 @@ builder.Services
             }
         };
     }).Services.AddAuthorizationBuilder()
-    .AddPolicy("RequireAdmin", policy =>
+    .AddPolicy(Helper.RequireAdmin, policy =>
+        policy.RequireAssertion(context => context.User.IsInRole(Helper.AdminRole)))
+    .AddPolicy(Helper.RequireModeratorOrAbove, policy =>
         policy.RequireAssertion(context =>
-            context.User.IsInRole("admin")))
-    .AddPolicy("RequireModeratorOrAbove", policy =>
-        policy.RequireAssertion(context =>
-            context.User.IsInRole("admin") ||
-            context.User.IsInRole("moderator")))
-    .AddPolicy("RequireAuthenticatedUser", policy =>
+            context.User.IsInRole(Helper.AdminRole) ||
+            context.User.IsInRole(Helper.ModeratorRole)))
+    .AddPolicy(Helper.RequireAuthenticatedUser, policy =>
         policy.RequireAuthenticatedUser());
 
 

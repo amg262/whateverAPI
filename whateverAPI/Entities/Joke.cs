@@ -79,9 +79,7 @@ public class Joke : IEntity<Guid>
             .ToList() ?? [],
         LaughScore = joke.LaughScore,
         IsActive = joke.IsActive,
-        UserId = joke.UserId.ToString(),
-        UserName = joke.User?.Name,
-        UserEmail = joke.User?.Email,
+        Author = User.ToUserAuthor(joke?.User)
     }).ToList();
 
     /// <summary>
@@ -213,9 +211,7 @@ public class Joke : IEntity<Guid>
         ModifiedAt = ModifiedAt,
         LaughScore = LaughScore,
         IsActive = IsActive,
-        UserId = UserId?.ToString(),
-        UserName = User?.Name,
-        UserEmail = User?.Email,
+        Author = User.ToUserAuthor(User)
     };
 
 

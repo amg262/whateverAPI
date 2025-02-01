@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using whateverAPI.Helpers;
+using whateverAPI.Models;
 using whateverAPI.Services;
 
 namespace whateverAPI.Entities;
@@ -71,5 +72,12 @@ public class User
         CreatedAt = DateTime.UtcNow,
         ModifiedAt = DateTime.UtcNow,
         IsActive = true,
+    };
+    
+    public static UserAuthor ToUserAuthor(User? user) => new()
+    {
+        Id = user.Id,
+        Name = user.Name,
+        Email = user.Email,
     };
 }
