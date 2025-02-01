@@ -47,7 +47,7 @@ builder.Services
                     .AllowCredentials();
             }
         });
-    })
+    }) // Wh
     .AddApplicationInsightsTelemetry()
     .AddProblemDetails(options =>
     {
