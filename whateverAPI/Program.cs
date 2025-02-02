@@ -19,7 +19,7 @@ builder.Configuration
     .AddEnvironmentVariables();
 
 
-builder.Services
+await builder.Services
     .AddOpenApi()
     .AddHttpContextAccessor()
     .AddValidatorsFromAssemblyContaining<Program>()
@@ -82,7 +82,8 @@ builder.Services
                 return Task.CompletedTask;
             }
         };
-    }).Services.AddAuthorizationBuilder()
+    })
+    .Services.AddAuthorizationBuilder()
     .AddPolicy(Helper.RequireAdmin, policy =>
         policy.RequireAssertion(context => context.User.IsInRole(Helper.AdminRole)))
     .AddPolicy(Helper.RequireModeratorOrAbove, policy =>
@@ -90,7 +91,8 @@ builder.Services
             context.User.IsInRole(Helper.AdminRole) ||
             context.User.IsInRole(Helper.ModeratorRole)))
     .AddPolicy(Helper.RequireAuthenticatedUser, policy =>
-        policy.RequireAuthenticatedUser());
+        policy.RequireAuthenticatedUser())
+    .Services.AddCustomRateLimiting(builder.Configuration);
 
 
 builder.Services.AddOptions<JwtOptions>().BindConfiguration(nameof(JwtOptions));
@@ -132,6 +134,7 @@ if (app.Environment.IsDevelopment())
 {
 }
 
+app.UseRateLimiter();
 app.MapOpenApi();
 app.MapScalarApiReference(opts =>
 {
@@ -144,18 +147,18 @@ app.MapScalarApiReference(opts =>
         .WithLayout(ScalarLayout.Modern)
         .WithTitle("Whatever bruh API")
         .WithDefaultFonts(true)
-        .WithPreferredScheme("Bearer")
-        .WithHttpBasicAuthentication(basic =>
-        {
-            basic.Username = "admin@admin.com";
-            basic.Password = "admin@admin.com";
-        })
-        .WithHttpBearerAuthentication(bearer => bearer.Token = Helper.AuthToken)
-        .WithOAuth2Authentication(oauth =>
-        {
-            oauth.Scopes = ["openid", "email", "profile"];
-            oauth.ClientId = builder.Configuration["GoogleOptions:ClientId"];
-        });
+        .WithPreferredScheme("Bearer");
+    // .WithHttpBasicAuthentication(basic =>
+    // {
+    //     basic.Username = "admin@admin.com";
+    //     basic.Password = "admin@admin.com";
+    // })
+    // .WithHttpBearerAuthentication(bearer => bearer.Token = Helper.AuthToken)
+    // .WithOAuth2Authentication(oauth =>
+    // {
+    //     oauth.Scopes = ["openid", "email", "profile"];
+    //     oauth.ClientId = builder.Configuration["GoogleOptions:ClientId"];
+    // });
 });
 
 

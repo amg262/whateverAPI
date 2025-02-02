@@ -2,10 +2,13 @@
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using whateverAPI.Endpoints;
 using whateverAPI.Entities;
+using whateverAPI.Options;
 
 namespace whateverAPI.Helpers;
 
@@ -591,5 +594,101 @@ public static class ObjectExtensions
         }
 
         return destination;
+    }
+}
+
+/// <summary>
+/// Provides rate limiting functionality for the API, implementing various policies to protect
+/// different types of endpoints from abuse and ensure fair resource usage.
+/// </summary>
+/// <remarks>
+/// This service implements four distinct rate limiting policies:
+/// 1. Global Policy: Provides general rate limiting across all endpoints
+/// 2. Token Policy: Specifically limits token-related operations
+/// 3. Auth Policy: Protects authentication endpoints
+/// 4. Concurrency Policy: Limits simultaneous requests from individual users
+/// 
+/// Each policy uses a fixed window algorithm, except for the concurrency limiter which
+/// manages simultaneous access. The service supports queue management for requests that
+/// exceed the limit and provides detailed rejection handling with retry information.
+/// </remarks>
+public static class RateLimitingService
+{
+    /// <summary>
+    /// Configures and adds rate limiting services to the application's service collection.
+    /// This method sets up all rate limiting policies and their associated configurations.
+    /// </summary>
+    /// <param name="services">The IServiceCollection to add rate limiting services to</param>
+    /// <param name="configuration">The application configuration containing rate limiting settings</param>
+    /// <returns>The modified service collection with rate limiting configured</returns>
+    public static Task<IServiceCollection> AddCustomRateLimiting(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        // Bind rate limiting options from configuration
+        var options = configuration.GetSection(nameof(RateLimitingOptions)).Get<RateLimitingOptions>();
+
+        services.AddRateLimiter(rateLimiter =>
+        {
+            // Configure global rate limiting policy
+            // This policy applies to all endpoints unless overridden
+            rateLimiter.AddFixedWindowLimiter(Helper.GlobalPolicy, opt =>
+            {
+                opt.PermitLimit = options.GlobalPermitLimit; // Maximum requests allowed in the window
+                opt.Window = TimeSpan.FromSeconds(options.GlobalWindowInSeconds); // Time window duration
+                opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst; // Process oldest requests first
+                opt.QueueLimit = options.GlobalQueueLimit; // Maximum requests to queue
+            });
+
+            // Configure token endpoint policy
+            // This applies stricter limits to token-related operations
+            rateLimiter.AddFixedWindowLimiter(Helper.TokenPolicy, opt =>
+            {
+                opt.PermitLimit = options.TokenPermitLimit; // Lower limit for token operations
+                opt.Window = TimeSpan.FromSeconds(options.TokenWindowInSeconds);
+                opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                opt.QueueLimit = options.TokenQueueLimit;
+            });
+
+            // Configure authentication endpoint policy
+            // This provides the strictest limits to protect authentication endpoints
+            rateLimiter.AddFixedWindowLimiter(Helper.AuthPolicy, opt =>
+            {
+                opt.PermitLimit = options.AuthPermitLimit; // Lowest limit for auth operations
+                opt.Window = TimeSpan.FromSeconds(options.AuthWindowInSeconds);
+                opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                opt.QueueLimit = options.AuthQueueLimit;
+            });
+
+            // Configure concurrency limiting policy
+            // This manages the number of simultaneous requests per user
+            rateLimiter.AddConcurrencyLimiter(Helper.ConcurrencyPolicy, opt =>
+            {
+                opt.PermitLimit = options.ConcurrentRequestLimit; // Maximum concurrent requests
+                opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                opt.QueueLimit = 1; // Minimal queue for concurrent requests
+            });
+
+            // Set the HTTP status code returned when rate limit is exceeded
+            rateLimiter.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            // Configure custom handling for rejected requests
+            // This provides detailed information about why the request was rejected
+            rateLimiter.OnRejected = async (context, token) =>
+            {
+                if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+                {
+                    // If retry-after information is available, include it in the response
+                    context.HttpContext.CreateTooManyRequestsProblem("Too many requests. Please try again later.", retryAfter);
+                }
+                else
+                {
+                    // Provide a basic response when retry timing isn't available
+                    context.HttpContext.CreateTooManyRequestsProblem("Too many requests. Please try again later.");
+                }
+            };
+        });
+
+        return Task.FromResult(services);
     }
 }

@@ -9,6 +9,12 @@ public static class Helper
 
     public const string TokenCookie = "whateverToken";
     public const string DefaultPolicy = "DefaultPolicy";
+    
+    public const string RateLimiting= "RateLimiting";
+    public const string GlobalPolicy = "GlobalRateLimit";
+    public const string TokenPolicy = "TokenRateLimit";
+    public const string AuthPolicy = "AuthRateLimit";
+    public const string ConcurrencyPolicy = "ConcurrencyLimit";
 
     public const string AuthToken =
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTk0YTRiOS0yYWYzLTc0N2ItOGRkZi0zZWZjZjA1MDk5ZmYiLCJuYW1lIjo" +

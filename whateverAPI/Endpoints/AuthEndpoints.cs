@@ -9,10 +9,22 @@ public class AuthEndpoints : IEndpoints
     public static void MapEndpoints(IEndpointRouteBuilder app)
     {
         var apiGroup = app.MapGroup("/api");
-        var googleAuthGroup = app.MapGroup("/api/auth/google").WithTags("Authentication");
-        var microsoftAuthGroup = app.MapGroup("/api/auth/microsoft").WithTags("Authentication");
-        var facebookAuthGroup = app.MapGroup("/api/auth/facebook").WithTags("Authentication");
-        var roleGroup = apiGroup.MapGroup("/roles").WithTags("Roles");
+        var googleAuthGroup = app
+            .MapGroup("/api/auth/google")
+            .WithTags("Authentication")
+            .RequireRateLimiting(Helper.AuthPolicy);
+        var microsoftAuthGroup = app
+            .MapGroup("/api/auth/microsoft")
+            .WithTags("Authentication")
+            .RequireRateLimiting(Helper.AuthPolicy);
+        var facebookAuthGroup = app
+            .MapGroup("/api/auth/facebook")
+            .WithTags("Authentication")
+            .RequireRateLimiting(Helper.AuthPolicy);
+        var roleGroup = apiGroup
+            .MapGroup("/roles")
+            .WithTags("Roles")
+            .RequireRateLimiting(Helper.AuthPolicy);
 
 // Endpoint to start the OAuth flow
         googleAuthGroup.MapGet("/login", async Task<IResult> (
