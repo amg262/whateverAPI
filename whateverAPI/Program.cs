@@ -21,6 +21,7 @@ builder.Configuration
 
 await builder.Services
     .AddOpenApi()
+    .AddCustomApiVersioning()
     .AddHttpContextAccessor()
     .AddValidatorsFromAssemblyContaining<Program>()
     .AddExceptionHandler<GlobalException>()

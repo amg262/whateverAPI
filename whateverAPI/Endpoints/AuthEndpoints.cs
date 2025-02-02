@@ -1,4 +1,5 @@
-﻿using whateverAPI.Helpers;
+﻿using Asp.Versioning;
+using whateverAPI.Helpers;
 using whateverAPI.Models;
 using whateverAPI.Services;
 
@@ -9,21 +10,36 @@ public class AuthEndpoints : IEndpoints
     public static void MapEndpoints(IEndpointRouteBuilder app)
     {
         var apiGroup = app.MapGroup("/api");
-        var googleAuthGroup = app
+        var googleAuthGroup2 = app
             .MapGroup("/api/auth/google")
             .WithTags("Authentication")
             .RequireRateLimiting(Helper.AuthPolicy);
-        var microsoftAuthGroup = app
+        var microsoftAuthGroup2 = app
             .MapGroup("/api/auth/microsoft")
             .WithTags("Authentication")
             .RequireRateLimiting(Helper.AuthPolicy);
-        var facebookAuthGroup = app
+        var facebookAuthGroup2 = app
             .MapGroup("/api/auth/facebook")
             .WithTags("Authentication")
             .RequireRateLimiting(Helper.AuthPolicy);
-        var roleGroup = apiGroup
-            .MapGroup("/roles")
-            .WithTags("Roles")
+
+        
+        var microsoftAuthGroup = app.NewVersionedApi()
+            .MapGroup("/api/v{version:apiVersion}/auth/microsoft")
+            .WithTags("Authentication")
+            .HasApiVersion(new ApiVersion(1, 0))
+            .RequireRateLimiting(Helper.AuthPolicy);
+        
+        var googleAuthGroup = app.NewVersionedApi()
+            .MapGroup("/api/v{version:apiVersion}/auth/google")
+            .WithTags("Authentication")
+            .HasApiVersion(new ApiVersion(1, 0))
+            .RequireRateLimiting(Helper.AuthPolicy);
+        
+        var facebookAuthGroup = app.NewVersionedApi()
+            .MapGroup("/api/v{version:apiVersion}/auth/facebook")
+            .WithTags("Authentication")
+            .HasApiVersion(new ApiVersion(1, 0))
             .RequireRateLimiting(Helper.AuthPolicy);
 
 // Endpoint to start the OAuth flow

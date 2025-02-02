@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Mvc;
 using whateverAPI.Helpers;
 using whateverAPI.Models;
 using whateverAPI.Services;
@@ -10,7 +11,14 @@ public class UserEndpoints : IEndpoints
     public static void MapEndpoints(IEndpointRouteBuilder app)
     {
         var apiGroup = app.MapGroup("/api");
-        var userGroup = apiGroup.MapGroup("/user").WithTags("User");
+        var userGroup2 = apiGroup.MapGroup("/user").WithTags("User");
+        
+        var userGroup = app.NewVersionedApi()
+            .MapGroup("/api/v{version:apiVersion}/user")
+            .WithTags("User")
+            .HasApiVersion(new ApiVersion(1, 0))
+            .RequireRateLimiting(Helper.GlobalPolicy);
+        
 
         // User Login
         userGroup.MapPost("/login", async Task<IResult> (

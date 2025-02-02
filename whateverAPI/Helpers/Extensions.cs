@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.RateLimiting;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -690,5 +691,49 @@ public static class RateLimitingService
         });
 
         return Task.FromResult(services);
+    }
+}
+
+/// <summary>
+/// Provides API versioning configuration and extensions for the application.
+/// Implements a comprehensive versioning strategy using URL, header, and query string approaches.
+/// </summary>
+public static class ApiVersioningExtensions
+{
+    /// <summary>
+    /// Adds and configures API versioning services with standardized options.
+    /// </summary>
+    /// <param name="services">The IServiceCollection to configure</param>
+    /// <returns>The configured service collection</returns>
+    public static IServiceCollection AddCustomApiVersioning(this IServiceCollection services)
+    {
+        services.AddApiVersioning(options =>
+            {
+                // Default version when not specified
+                options.DefaultApiVersion = new ApiVersion(1, 0);
+
+                // Assume default version when not specified
+                options.AssumeDefaultVersionWhenUnspecified = true;
+
+                // Report available versions in response headers
+                options.ReportApiVersions = true;
+
+                // Support multiple version reading methods
+                options.ApiVersionReader = ApiVersionReader.Combine(
+                    new UrlSegmentApiVersionReader(),
+                    new HeaderApiVersionReader("x-api-version"),
+                    new QueryStringApiVersionReader("api-version")
+                );
+            })
+            .AddApiExplorer(options =>
+            {
+                // Format version as 'v1.0'
+                options.GroupNameFormat = "'v'VVV";
+
+                // Substitute version in URLs
+                options.SubstituteApiVersionInUrl = true;
+            });
+
+        return services;
     }
 }

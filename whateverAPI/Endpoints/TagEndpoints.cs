@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Mvc;
 using whateverAPI.Entities;
 using whateverAPI.Helpers;
 using whateverAPI.Models;
@@ -11,8 +12,14 @@ public class TagEndpoints : IEndpoints
     public static void MapEndpoints(IEndpointRouteBuilder app)
     {
         var apiGroup = app.MapGroup("/api");
-        var tagGroup = apiGroup.MapGroup("/tag").WithTags("Tags");
+        var tagGroup2 = apiGroup.MapGroup("/tag").WithTags("Tags");
 
+        
+        var tagGroup = app.NewVersionedApi()
+            .MapGroup("/api/v{version:apiVersion}/tags")
+            .WithTags("Tags")
+            .HasApiVersion(new ApiVersion(1, 0))
+            .RequireRateLimiting(Helper.GlobalPolicy);
 
 // Get all tags
         tagGroup.MapGet("/", async Task<IResult> (

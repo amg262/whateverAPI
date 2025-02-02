@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using whateverAPI.Entities;
 using whateverAPI.Helpers;
@@ -12,7 +13,13 @@ public class JokeEndpoints : IEndpoints
     public static void MapEndpoints(IEndpointRouteBuilder app)
     {
         var apiGroup = app.MapGroup("/api");
-        var jokeGroup = apiGroup.MapGroup("/jokes").WithTags("Jokes");
+        var jokeGroup2 = apiGroup.MapGroup("/jokes").WithTags("Jokes");
+        
+        var jokeGroup = app.NewVersionedApi()
+            .MapGroup("/api/v{version:apiVersion}/jokes")
+            .WithTags("Jokes")
+            .HasApiVersion(new ApiVersion(1, 0))
+            .RequireRateLimiting(Helper.GlobalPolicy);
 
         // Get All Jokes
         jokeGroup.MapGet("/", async Task<IResult> (
@@ -22,7 +29,6 @@ public class JokeEndpoints : IEndpoints
             {
                 var jokes = await jokeService.GetJokesAsync(ct);
                 return jokes is not null && jokes.Count != 0
-                    // ? TypedResults.Ok(Mapper.JokesToJokeReponses(jokes))
                     ? TypedResults.Ok(Joke.ToJokeResponses(jokes))
                     : context.CreateNotFoundProblem(nameof(Joke), "all");
             })

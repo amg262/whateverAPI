@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using whateverAPI.Entities;
 using whateverAPI.Helpers;
@@ -12,7 +13,13 @@ public class RoleEndpoints : IEndpoints
     public static void MapEndpoints(IEndpointRouteBuilder app)
     {
         var apiGroup = app.MapGroup("/api");
-        var roleGroup = apiGroup.MapGroup("/roles").WithTags("Roles");
+        var roleGroup2 = apiGroup.MapGroup("/roles").WithTags("Roles");
+        
+        var roleGroup = app.NewVersionedApi()
+            .MapGroup("/api/v{version:apiVersion}/roles")
+            .WithTags("Roles")
+            .HasApiVersion(new ApiVersion(1, 0))
+            .RequireRateLimiting(Helper.GlobalPolicy);
 
 // Get all roles
         roleGroup.MapGet("/", async Task<IResult> (
