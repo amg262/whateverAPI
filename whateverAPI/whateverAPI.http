@@ -1,117 +1,173 @@
-### Use variables from http-client.env.json and http-client.private.env.json
-@baseUrl = {{baseUrl}}
+### Variables
+@baseUrl = https://localhost:8081
+@token = // Will be set after login
 
-### Authentication Endpoints
-### Login - Get JWT Token
-POST {{baseUrl}}/api/user/login
+### Authentication Flow
+
+### Regular User Login
+# @name login
+POST {{baseUrl}}/api/v1/user/login
 Content-Type: application/json
 
 {
-    "username": "{{testUser.username}}",
-    "email": "{{testUser.email}}",
-    "password": "{{testUser.password}}"
+  "email": "user@user.com",
+  "name": "Test User"
 }
 
-### Logout
-POST {{baseUrl}}/api/user/logout
+### Store token from login response
+### Extract and store auth token from the login response
+@authToken = {{userLogin.response.body.token}}
+
+### OAuth Flows
+
+### Get Google OAuth URL
+GET {{baseUrl}}/api/v1/auth/google/login
+
+### Get Microsoft OAuth URL
+GET {{baseUrl}}/api/v1/auth/microsoft/login
+
+### Get Facebook OAuth URL
+GET {{baseUrl}}/api/v1/auth/facebook/login
+
+### Role Management
+
+### Get All Roles (requires auth)
+GET {{baseUrl}}/api/v1/roles
+Authorization: Bearer {{token}}
+
+### Create New Role (admin only)
+POST {{baseUrl}}/api/v1/roles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "tester",
+  "description": "Role for testing purposes"
+}
+
+### Store token and user ID from login response
+@userId = {{userLogin.response.body.id}}
+
+### Assign Role to User
+PUT {{baseUrl}}/api/v1/roles/user/{{userId}}/assign/tester
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "userId": "{{userId}}",
+    "roleName": "tester"
+}
+
+### Get User's Role
+GET {{baseUrl}}/api/v1/roles/user/{{userId}}
+Authorization: Bearer {{token}}
+
+### Tag Management
+
+### Get All Tags
+GET {{baseUrl}}/api/v1/tag
+Authorization: Bearer {{token}}
+
+### Create New Tag
+# @name createTag
+POST {{baseUrl}}/api/v1/tag
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "test-tag"
+}
+
+### Store tag ID from response
+@tagId = {{createTag.response.body.$.id}}
+
+### Get Tag by ID
+GET {{baseUrl}}/api/v1/tag/{{tagId}}
 Authorization: Bearer {{authToken}}
 
-### Basic CRUD Operations
+### Update Tag
+PUT {{baseUrl}}/api/v1/tag/{{tagId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "updated-test-tag",
+  "isActive": true
+}
+
+### Delete Tag
+DELETE {{baseUrl}}/api/v1/tag/{{tagId}}
+Authorization: Bearer {{authToken}}
+
+### Joke Management
+
 ### Get All Jokes
-GET {{baseUrl}}/api/jokes
-Authorization: Bearer {{authToken}}
-
-### Get Specific Joke by ID
-GET {{baseUrl}}/api/jokes/{{jokeId}}
-Authorization: Bearer {{authToken}}
+GET {{baseUrl}}/api/v1/jokes
+Authorization: Bearer {{token}}
 
 ### Create New Joke
-POST {{baseUrl}}/api/jokes
+# @name createJoke
+POST {{baseUrl}}/api/v1/jokes
+Authorization: Bearer {{token}}
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
 
 {
   "content": "Why did the developer quit his job? He didn't get arrays!",
   "type": "Programming",
   "tags": ["programming", "work"],
-  "laughScore": 0
+  "laughScore": 85,
+  "isActive": true
 }
 
-### Update Existing Joke
-PUT {{baseUrl}}/api/jokes/{{jokeId}}
+### Store joke ID from response
+@jokeId = {{createJoke.response.body.$.id}}
+
+### Get Joke by ID
+GET {{baseUrl}}/api/v1/jokes/{{jokeId}}
+Authorization: Bearer {{token}}
+
+### Update Joke
+PUT {{baseUrl}}/api/v1/jokes/{{jokeId}}
+Authorization: Bearer {{token}}
 Content-Type: application/json
-Authorization: Bearer {{authToken}}
 
 {
-  "content": "Updated joke content",
+  "content": "Updated: Why did the developer quit his job? He didn't get arrays!",
   "type": "Programming",
-  "tags": ["programming", "updated"],
-  "laughScore": 5
+  "tags": ["programming", "work", "updated"],
+  "laughScore": 90,
+  "isActive": true
 }
-
-### Delete Joke
-DELETE {{baseUrl}}/api/jokes/{{jokeId}}
-Authorization: Bearer {{authToken}}
-
-### Specialized Endpoints
-### Get Random Joke 
-GET {{baseUrl}}/api/jokes/random
-Authorization: Bearer {{authToken}}
-
-### Get Jokes by Type with Filtering
-GET {{baseUrl}}/api/jokes/type?type=Joke&pageSize=10&pageNumber=1&sortBy=laughScore&sortDescending=true
-Authorization: Bearer {{authToken}}
 
 ### Search Jokes
-GET {{baseUrl}}/api/jokes/search?q=programmer
-Authorization: Bearer {{authToken}}
+GET {{baseUrl}}/api/v1/jokes/search?q=developer
+Authorization: Bearer {{token}}
+
+### Advanced Joke Search and Filter
+POST {{baseUrl}}/api/v1/jokes/find
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "Programming",
+  "query": "developer",
+  "active": true,
+  "pageSize": 10,
+  "pageNumber": 1,
+  "sortBy": "laughScore",
+  "sortDescending": true
+}
 
 ### Get External Joke
-GET {{baseUrl}}/api/jokes/whatever
-Authorization: Bearer {{authToken}}
+GET {{baseUrl}}/api/v1/jokes/whatever
+Authorization: Bearer {{token}}
 
-### Error Cases
-### Get Non-existent Joke
-GET {{baseUrl}}/api/jokes/11111111-1111-1111-1111-111111111111
-Authorization: Bearer {{authToken}}
+### Get Basic Joke (Klump)
+GET {{baseUrl}}/api/v1/jokes/klump
+Authorization: Bearer {{token}}
 
-### Create Invalid Joke (Missing Required Fields)
-POST {{baseUrl}}/api/jokes
-Content-Type: application/json
-Authorization: Bearer {{authToken}}
+### Cleanup/Logout
 
-{
-  "type": "Programming"
-}
-
-### Update Non-existent Joke
-PUT {{baseUrl}}/api/jokes/11111111-1111-1111-1111-111111111111
-Content-Type: application/json
-Authorization: Bearer {{authToken}}
-
-{
-  "content": "This joke doesn't exist",
-  "type": "Programming"
-}
-
-### Get Jokes with Invalid Type
-GET {{baseUrl}}/api/jokes/type?type=InvalidType
-Authorization: Bearer {{authToken}}
-
-### Get Jokes with Invalid Pagination
-GET {{baseUrl}}/api/jokes/type?type=Joke&pageSize=-1&pageNumber=0
-Authorization: Bearer {{authToken}}
-
-### Authentication Error Cases
-### Login with Invalid Credentials
-POST {{baseUrl}}/api/user/login
-Content-Type: application/json
-
-{
-  "username": "invalid",
-  "email": "invalid@example.com",
-  "password": "wrong"
-}
-
-### Access Protected Route without Token
-GET {{baseUrl}}/api/jokes
+### Logout User
+POST {{baseUrl}}/api/v1/user/logout
+Authorization: Bearer {{token}}
