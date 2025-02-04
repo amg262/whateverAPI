@@ -23,16 +23,14 @@ public record OAuthUserInfo
     public required string Provider { get; init; }
 
 
-    public static OAuthUserInfo? FromUserInfoAsync<T>(T userInfo) where T : class, new()
+    public static OAuthUserInfo? FromUserInfoAsync<T>(T userInfo) where T : class, new() => userInfo switch
     {
-        return userInfo switch
-        {
-            MicrosoftUserInfo microsoftUserInfo => FromMicrosoftUserInfo(microsoftUserInfo),
-            GoogleUserInfo googleUserInfo => FromGoogleUserInfo(googleUserInfo),
-            FacebookUserInfo facebookUserInfo => FromFacebookUserInfo(facebookUserInfo),
-            _ => null
-        };
-    }
+        MicrosoftUserInfo microsoftUserInfo => FromMicrosoftUserInfo(microsoftUserInfo),
+        GoogleUserInfo googleUserInfo => FromGoogleUserInfo(googleUserInfo),
+        FacebookUserInfo facebookUserInfo => FromFacebookUserInfo(facebookUserInfo),
+        _ => null
+    };
+
 
     private static OAuthUserInfo FromMicrosoftUserInfo(MicrosoftUserInfo userInfo) => new()
     {

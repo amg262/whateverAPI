@@ -16,16 +16,16 @@ public interface IFacebookAuthService : IOAuthService
 public class FacebookAuthService : IFacebookAuthService
 {
     private readonly HttpClient _httpClient;
-    private readonly FacebookOptions _settings;
+    private readonly FacebookOptions _options;
     private readonly ILogger<FacebookAuthService> _logger;
 
     public FacebookAuthService(
         HttpClient httpClient,
-        IOptions<FacebookOptions> settings,
+        IOptions<FacebookOptions> options,
         ILogger<FacebookAuthService> logger)
     {
         _httpClient = httpClient;
-        _settings = settings.Value;
+        _options = options.Value;
         _logger = logger;
     }
 
@@ -39,8 +39,8 @@ public class FacebookAuthService : IFacebookAuthService
 
         var queryParams = new Dictionary<string, string>
         {
-            ["client_id"] = _settings.AppId,
-            ["redirect_uri"] = _settings.RedirectUri,
+            ["client_id"] = _options.AppId,
+            ["redirect_uri"] = _options.RedirectUri,
             ["response_type"] = "code",
             ["scope"] = string.Join(" ", scopes),
             ["state"] = Guid.CreateVersion7().ToString()
@@ -56,10 +56,10 @@ public class FacebookAuthService : IFacebookAuthService
     {
         var tokenRequest = new Dictionary<string, string>
         {
-            ["client_id"] = _settings.AppId,
-            ["client_secret"] = _settings.AppSecret,
+            ["client_id"] = _options.AppId,
+            ["client_secret"] = _options.AppSecret,
             ["code"] = code,
-            ["redirect_uri"] = _settings.RedirectUri,
+            ["redirect_uri"] = _options.RedirectUri,
             ["grant_type"] = "authorization_code"
         };
 

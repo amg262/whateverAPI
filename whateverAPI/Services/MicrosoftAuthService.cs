@@ -17,19 +17,16 @@ public interface IMicrosoftAuthService : IOAuthService
 public class MicrosoftAuthService : IMicrosoftAuthService
 {
     private readonly HttpClient _httpClient;
-    private readonly MicrosoftOptions _settings;
-    private readonly IJwtTokenService _jwtTokenService;
+    private readonly MicrosoftOptions _options;
     private readonly ILogger<MicrosoftAuthService> _logger;
 
     public MicrosoftAuthService(
         HttpClient httpClient,
-        IOptions<MicrosoftOptions> settings,
-        IJwtTokenService jwtTokenService,
+        IOptions<MicrosoftOptions> options,
         ILogger<MicrosoftAuthService> logger)
     {
         _httpClient = httpClient;
-        _settings = settings.Value;
-        _jwtTokenService = jwtTokenService;
+        _options = options.Value;
         _logger = logger;
     }
 
@@ -47,8 +44,8 @@ public class MicrosoftAuthService : IMicrosoftAuthService
         var queryParams = new Dictionary<string, string>
         {
             // Use ClientId as client_id for Microsoft OAuth
-            ["client_id"] = _settings.ClientId ?? throw new InvalidOperationException("ClientId is not configured"),
-            ["redirect_uri"] = _settings.RedirectUri ?? throw new InvalidOperationException("RedirectUri is not configured"),
+            ["client_id"] = _options.ClientId ?? throw new InvalidOperationException("ClientId is not configured"),
+            ["redirect_uri"] = _options.RedirectUri ?? throw new InvalidOperationException("RedirectUri is not configured"),
             ["response_type"] = "code",
             ["scope"] = string.Join(" ", scopes),
             ["response_mode"] = "query",
@@ -71,9 +68,9 @@ public class MicrosoftAuthService : IMicrosoftAuthService
         var tokenRequest = new Dictionary<string, string>
         {
             ["code"] = code,
-            ["client_id"] = _settings.ClientId,
-            ["client_secret"] = _settings.ClientSecret,
-            ["redirect_uri"] = _settings.RedirectUri,
+            ["client_id"] = _options.ClientId,
+            ["client_secret"] = _options.ClientSecret,
+            ["redirect_uri"] = _options.RedirectUri,
             ["grant_type"] = "authorization_code"
         };
 

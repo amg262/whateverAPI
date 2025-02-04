@@ -48,49 +48,36 @@ public class JokeApiService
     /// </exception>
     public async Task<Joke?> GetExternalJoke(CancellationToken ct = default)
     {
-        try
+        var response = await _httpClient.GetAsync($"joke/dark", ct);
+
+        if (!response.IsSuccessStatusCode)
         {
-            var response = await _httpClient.GetAsync($"joke/dark", ct);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogError("Failed to fetch joke from JokeAPI: {StatusCode}", response.StatusCode);
-                return null;
-            }
-
-            var jokeResponse = await response.Content.ReadFromJsonAsync<JokeApiResponse>(ct);
-            // var jokeResponse = JsonSerializer.Deserialize<JokeApiResponse>(content);
-
-            if (jokeResponse == null || jokeResponse.Error) return null;
-
-            // var joke = Mapper.JokeApiResponseToJoke(jokeResponse);
-            var newJoke = Joke.FromJokeApiResponse(jokeResponse);
-
-            // Clear the tags that were created in FromJokeApiResponse
-            var tagNames = newJoke.Tags?.Select(t => t.Name).ToList() ?? [];
-            newJoke.Tags?.Clear();
-
-            // Add each tag using the TagService
-            foreach (var tagName in tagNames)
-            {
-                var tagEntity = await _tagService.CreateOrFindTagAsync(tagName, ct);
-                newJoke.Tags ??= [];
-                newJoke.Tags.Add(tagEntity);
-            }
-
-            _db.Jokes.Add(newJoke);
-            await _db.SaveChangesAsync(ct);
-            return newJoke;
+            _logger.LogError("Failed to fetch joke from JokeAPI: {StatusCode}", response.StatusCode);
+            return null;
         }
-        catch (OperationCanceledException)
+
+        var jokeResponse = await response.Content.ReadFromJsonAsync<JokeApiResponse>(ct);
+        // var jokeResponse = JsonSerializer.Deserialize<JokeApiResponse>(content);
+
+        if (jokeResponse == null || jokeResponse.Error) return null;
+
+        // var joke = Mapper.JokeApiResponseToJoke(jokeResponse);
+        var newJoke = Joke.FromJokeApiResponse(jokeResponse);
+
+        // Clear the tags that were created in FromJokeApiResponse
+        var tagNames = newJoke.Tags?.Select(t => t.Name).ToList() ?? [];
+        newJoke.Tags?.Clear();
+
+        // Add each tag using the TagService
+        foreach (var tagName in tagNames)
         {
-            _logger.LogWarning("Fetching joke from external API was cancelled");
-            throw;
+            var tagEntity = await _tagService.CreateOrFindTagAsync(tagName, ct);
+            newJoke.Tags ??= [];
+            newJoke.Tags.Add(tagEntity);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching joke from external API");
-            throw;
-        }
+
+        _db.Jokes.Add(newJoke);
+        await _db.SaveChangesAsync(ct);
+        return newJoke;
     }
 }

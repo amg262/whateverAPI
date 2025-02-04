@@ -29,22 +29,22 @@ public interface IGoogleAuthService : IOAuthService
 public class GoogleAuthService : IGoogleAuthService
 {
     private readonly HttpClient _httpClient;
-    private readonly GoogleOptions _settings;
+    private readonly GoogleOptions _options;
     private readonly ILogger<GoogleAuthService> _logger;
 
     /// <summary>
     /// Initializes a new instance of the GoogleAuthService with required dependencies.
     /// </summary>
     /// <param name="httpClient">HTTP client for making requests to Google APIs</param>
-    /// <param name="settings">Configuration settings for Google OAuth</param>
+    /// <param name="options">Configuration settings for Google OAuth</param>
     /// <param name="logger">Logger for error tracking and debugging</param>
     public GoogleAuthService(
         HttpClient httpClient,
-        IOptions<GoogleOptions> settings,
+        IOptions<GoogleOptions> options,
         ILogger<GoogleAuthService> logger)
     {
         _httpClient = httpClient;
-        _settings = settings.Value;
+        _options = options.Value;
         _logger = logger;
     }
 
@@ -70,8 +70,8 @@ public class GoogleAuthService : IGoogleAuthService
 
         var queryParams = new Dictionary<string, string>
         {
-            ["client_id"] = _settings.ClientId,
-            ["redirect_uri"] = _settings.RedirectUri,
+            ["client_id"] = _options.ClientId,
+            ["redirect_uri"] = _options.RedirectUri,
             ["response_type"] = "code",
             ["scope"] = string.Join(" ", scopes),
             ["access_type"] = "offline",
@@ -122,9 +122,9 @@ public class GoogleAuthService : IGoogleAuthService
         var tokenRequest = new Dictionary<string, string>
         {
             ["code"] = code,
-            ["client_id"] = _settings.ClientId,
-            ["client_secret"] = _settings.ClientSecret,
-            ["redirect_uri"] = _settings.RedirectUri,
+            ["client_id"] = _options.ClientId,
+            ["client_secret"] = _options.ClientSecret,
+            ["redirect_uri"] = _options.RedirectUri,
             ["grant_type"] = "authorization_code"
         };
 

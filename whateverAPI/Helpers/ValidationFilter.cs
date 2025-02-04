@@ -21,20 +21,6 @@ namespace whateverAPI.Helpers;
 /// 3. Applies FluentValidation rules to the model
 /// 4. Generates structured validation responses for any failures
 /// 
-/// Problem Details Implementation:
-/// Follows RFC 7807 specifications for HTTP API problem details, providing:
-/// - Consistent error response structure
-/// - Machine-readable error types
-/// - Human-readable error descriptions
-/// - Detailed validation context
-/// - Environment-specific debugging information
-/// 
-/// Security and Debugging Features:
-/// - Correlation ID tracking for request tracing
-/// - Structured logging with contextual information
-/// - Environment-aware error detail exposure
-/// - Standardized error response formats
-/// 
 /// Usage Example:
 /// This filter is typically applied to API endpoints that require request validation:
 /// </remarks>

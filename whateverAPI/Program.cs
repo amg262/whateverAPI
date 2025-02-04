@@ -27,9 +27,7 @@ await builder.Services
     .AddExceptionHandler<GlobalException>()
     .AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString(Helper.DefaultConnection), o =>
-                o.EnableRetryOnFailure())
-            .EnableDetailedErrors()
-            .EnableSensitiveDataLogging())
+                o.EnableRetryOnFailure()).EnableDetailedErrors().EnableSensitiveDataLogging())
     .AddCors(options =>
     {
         var corsOptions = builder.Configuration.GetSection(nameof(CorsOptions)).Get<CorsOptions>();
@@ -48,7 +46,7 @@ await builder.Services
                     .AllowCredentials();
             }
         });
-    }) // Wh
+    })
     .AddApplicationInsightsTelemetry()
     .AddProblemDetails(options =>
     {
@@ -148,18 +146,18 @@ app.MapScalarApiReference(opts =>
         .WithLayout(ScalarLayout.Modern)
         .WithTitle("Whatever bruh API")
         .WithDefaultFonts(true)
-        .WithPreferredScheme("Bearer");
-    // .WithHttpBasicAuthentication(basic =>
-    // {
-    //     basic.Username = "admin@admin.com";
-    //     basic.Password = "admin@admin.com";
-    // })
-    // .WithHttpBearerAuthentication(bearer => bearer.Token = Helper.AuthToken)
-    // .WithOAuth2Authentication(oauth =>
-    // {
-    //     oauth.Scopes = ["openid", "email", "profile"];
-    //     oauth.ClientId = builder.Configuration["GoogleOptions:ClientId"];
-    // });
+        .WithPreferredScheme("Bearer")
+        .WithHttpBasicAuthentication(basic =>
+        {
+            basic.Username = "admin@admin.com";
+            basic.Password = "admin@admin.com";
+        })
+        .WithHttpBearerAuthentication(bearer => bearer.Token = Helper.AuthToken)
+        .WithOAuth2Authentication(oauth =>
+        {
+            oauth.Scopes = ["openid", "email", "profile"];
+            oauth.ClientId = builder.Configuration["GoogleOptions:ClientId"];
+        });
 });
 
 

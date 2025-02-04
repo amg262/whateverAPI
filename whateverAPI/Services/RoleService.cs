@@ -92,12 +92,10 @@ public class RoleService
         return user?.Role;
     }
 
-    public async Task<List<Role>> GetAllRolesAsync(CancellationToken ct = default)
-    {
-        return await _db.Roles
-            .OrderBy(r => r.Name)
-            .ToListAsync(ct);
-    }
+    public async Task<List<Role>> GetAllRolesAsync(CancellationToken ct = default) => await _db.Roles
+        .OrderBy(r => r.Name)
+        .ToListAsync(ct);
+
 
     private async Task<bool> HasRoleAsync(Guid userId, string roleName, CancellationToken ct = default) =>
         await _db.Users.AnyAsync(u => u.Id == userId && u.Role!.Name.ToLower() == roleName.ToLower(), ct);
@@ -110,6 +108,6 @@ public class RoleService
     public async Task<bool> IsModeratorOrAboveAsync(Guid userId, CancellationToken ct = default)
     {
         var allowedRoles = new[] { Helper.AdminRole, Helper.ModeratorRole };
-        return await _db.Users.AnyAsync(u => u.Id == userId && allowedRoles.Contains(u.Role!.Name.ToLower()), ct);
+        return await _db.Users.AnyAsync(u => u.Id == userId && allowedRoles.Contains(u.Role.Name.ToLower()), ct);
     }
 }
