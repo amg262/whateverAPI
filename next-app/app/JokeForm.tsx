@@ -8,6 +8,10 @@ export default function JokeForm() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         // TODO: Add API call to create joke
+
+        const response = await fetch('https://whateverbruh.azurewebsites.net/api/v1/jokes/klump');
+        const data = await response.json();
+        console.log(data);
         console.log('Submitting joke:', jokeContent);
     };
 
