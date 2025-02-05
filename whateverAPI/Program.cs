@@ -28,25 +28,25 @@ await builder.Services
     .AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString(Helper.DefaultConnection), o =>
             o.EnableRetryOnFailure()).EnableDetailedErrors().EnableSensitiveDataLogging())
-    .AddCors(options =>
-    {
-        var corsOptions = builder.Configuration.GetSection(nameof(CorsOptions)).Get<CorsOptions>();
-        options.AddPolicy(Helper.DefaultPolicy, policyBuilder =>
-        {
-            if (builder.Environment.IsDevelopment())
-            {
-                policyBuilder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
-            }
-            else
-            {
-                policyBuilder
-                    .WithOrigins(corsOptions?.AllowedOrigins ?? ["https://whatever-roan-five.vercel.app"])
-                    .WithMethods(corsOptions?.AllowedMethods ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
-                    .WithHeaders(corsOptions?.AllowedHeaders ?? ["*"])
-                    .AllowCredentials();
-            }
-        });
-    })
+    // .AddCors(options =>
+    // {
+    //     var corsOptions = builder.Configuration.GetSection(nameof(CorsOptions)).Get<CorsOptions>();
+    //     options.AddPolicy(Helper.DefaultPolicy, policyBuilder =>
+    //     {
+    //         if (builder.Environment.IsDevelopment())
+    //         {
+    //             policyBuilder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+    //         }
+    //         else
+    //         {
+    //             policyBuilder
+    //                 .WithOrigins(corsOptions?.AllowedOrigins ?? ["https://whatever-roan-five.vercel.app"])
+    //                 .WithMethods(corsOptions?.AllowedMethods ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+    //                 .WithHeaders(corsOptions?.AllowedHeaders ?? ["*"])
+    //                 .AllowCredentials();
+    //         }
+    //     });
+    // })
     .AddApplicationInsightsTelemetry()
     .AddProblemDetails(options =>
     {
@@ -166,8 +166,8 @@ app
     .UseHttpsRedirection()
     .UseStaticFiles()
     .UseAuthentication()
-    .UseAuthorization()
-    .UseCors(Helper.DefaultPolicy);
+    .UseAuthorization();
+    // .UseCors(Helper.DefaultPolicy);
 
 await app.InitializeDatabaseRetryAsync();
 
