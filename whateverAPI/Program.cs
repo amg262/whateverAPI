@@ -27,7 +27,7 @@ await builder.Services
     .AddExceptionHandler<GlobalException>()
     .AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString(Helper.DefaultConnection), o =>
-                o.EnableRetryOnFailure()).EnableDetailedErrors().EnableSensitiveDataLogging())
+            o.EnableRetryOnFailure()).EnableDetailedErrors().EnableSensitiveDataLogging())
     .AddCors(options =>
     {
         var corsOptions = builder.Configuration.GetSection(nameof(CorsOptions)).Get<CorsOptions>();
@@ -40,7 +40,7 @@ await builder.Services
             else
             {
                 policyBuilder
-                    .WithOrigins(corsOptions?.AllowedOrigins ?? ["https://whateverbruh.azurewebsites.net"])
+                    .WithOrigins(corsOptions?.AllowedOrigins ?? ["https://whatever-roan-five.vercel.app"])
                     .WithMethods(corsOptions?.AllowedMethods ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
                     .WithHeaders(corsOptions?.AllowedHeaders ?? ["*"])
                     .AllowCredentials();
