@@ -17,6 +17,8 @@ export default function JokeForm() {
                 <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Add a Joke</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
+
+                        <div>{"Hello everyone!"}</div>
             <textarea
                 value={jokeContent}
                 onChange={(e) => setJokeContent(e.target.value)}
