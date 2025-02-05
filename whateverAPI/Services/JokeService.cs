@@ -121,22 +121,22 @@ public class JokeService //: IJokeService
         if (jokeExists) throw new DuplicateNameException("Joke with the same content already exists");
 
         if (joke.Tags?.Count > 0)
-        {
-            var newTags = joke.Tags.ToList();
-            joke.Tags.Clear();
-
-            foreach (var tag in newTags)
             {
+                var newTags = joke.Tags.ToList();
+                joke.Tags.Clear();
+
+                foreach (var tag in newTags)
+                {
                 var tagEntity = await _tagService.CreateOrFindTagAsync(tag.Name, ct);
                 joke.Tags.Add(tagEntity);
             }
-        }
+            }
 
-        _db.Jokes.Add(joke);
+            _db.Jokes.Add(joke);
         await _db.SaveChangesAsync(ct);
 
-        return await _db.Jokes
-            .Include(j => j.Tags)
+            return await _db.Jokes
+                .Include(j => j.Tags)
             .Include(j => j.User)
             .AsNoTracking()
             .FirstAsync(j => j.Id == joke.Id, ct);
@@ -155,48 +155,48 @@ public class JokeService //: IJokeService
     {
         var count = await _db.Jokes.CountAsync(ct);
         if (count == 0)
-        {
-            _logger.LogInformation("No jokes available for random selection");
-            return null;
-        }
+            {
+                _logger.LogInformation("No jokes available for random selection");
+                return null;
+            }
 
-        var random = new Random();
-        var skipCount = random.Next(count);
+            var random = new Random();
+            var skipCount = random.Next(count);
 
-        var joke = await _db.Jokes
-            .Include(j => j.Tags)
+            var joke = await _db.Jokes
+                .Include(j => j.Tags)
             .Include(j => j.User)
             .AsNoTracking()
-            .Skip(skipCount)
+                .Skip(skipCount)
             .FirstOrDefaultAsync(ct);
 
-        if (joke != null)
-        {
-            _logger.LogInformation("Retrieved random joke with ID: {JokeId}", joke.Id);
-        }
+            if (joke != null)
+            {
+                _logger.LogInformation("Retrieved random joke with ID: {JokeId}", joke.Id);
+            }
 
-        return joke;
-    }
+            return joke;
+        }
 
 
     public Task<List<Joke>> GetJokesByType(JokeType type, int? pageSize = null, int? pageNumber = null, string? sortBy = null,
         bool sortDescending = false, CancellationToken ct = default)
-    {
-        var query = _db.Jokes
-            .Include(j => j.Tags)
+        {
+            var query = _db.Jokes
+                .Include(j => j.Tags)
             .Include(j => j.User)
             .AsNoTracking()
-            .Where(j => j.Type == type);
+                .Where(j => j.Type == type);
 
-        if (!string.IsNullOrEmpty(sortBy))
-        {
-            Expression<Func<Joke, object>> keySelector = sortBy.ToLower() switch
+            if (!string.IsNullOrEmpty(sortBy))
             {
-                "createdat" => j => j.CreatedAt,
-                "laughscore" => j => j.LaughScore ?? 0,
-                "content" => j => j.Content,
-                _ => j => j.CreatedAt
-            };
+                Expression<Func<Joke, object>> keySelector = sortBy.ToLower() switch
+                {
+                    "createdat" => j => j.CreatedAt,
+                    "laughscore" => j => j.LaughScore ?? 0,
+                    "content" => j => j.Content,
+                    _ => j => j.CreatedAt
+                };
             query = query.ApplySorting(keySelector, sortDescending);
         }
 

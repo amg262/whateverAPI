@@ -1,20 +1,20 @@
-﻿networks:
+networks:
   custom:
     ipam:
       config:
         - subnet: 10.10.0.0/16
 services:
-#  whateverapi:
-#    image: whateverapi
-#    build:
-#      context: .
-#      dockerfile: whateverAPI/Dockerfile
-#    ports:
-#      - "5000:8080"
-#      - "5001:8081"
-#    depends_on:
-##      - sqlserver
-#      - postgres
+  whateverapi:
+    image: whateverapi
+    build:
+      context: .
+      dockerfile: whateverAPI/Dockerfile
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    depends_on:
+#      - sqlserver
+      - postgres
   postgres:
     image: postgres:latest
     environment:
@@ -82,3 +82,5 @@ volumes:
 #    driver: local
 #  mssql_data:
 #    driver: local
+
+

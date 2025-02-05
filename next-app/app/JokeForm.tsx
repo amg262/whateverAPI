@@ -5,6 +5,10 @@ import { useState } from 'react';
 export default function JokeForm() {
     const [jokeContent, setJokeContent] = useState('');
 
+    const bah = fetch('https://localhost:8081/api/v1/jokes/klump')
+
+
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         // TODO: Add API call to create joke

@@ -30,8 +30,6 @@ public class JokeRepository : BaseRepository<Joke, Guid>
 
     public override async Task<Joke> CreateAsync(Joke joke)
     {
-        try
-        {
             if (joke.Tags?.Count > 0)
             {
                 var newTags = joke.Tags.ToList();
@@ -52,12 +50,6 @@ public class JokeRepository : BaseRepository<Joke, Guid>
             return await DbSet
                 .Include(j => j.Tags)
                 .FirstAsync(j => j.Id == joke.Id);
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error creating joke: {Content}", joke.Content);
-            throw;
-        }
     }
 
     // Implement IJokeRepository-specific methods
