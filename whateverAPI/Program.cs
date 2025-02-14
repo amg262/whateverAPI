@@ -28,25 +28,34 @@ await builder.Services
     .AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString(Helper.DefaultConnection), o =>
             o.EnableRetryOnFailure()).EnableDetailedErrors().EnableSensitiveDataLogging())
-    // .AddCors(options =>
-    // {
-    //     var corsOptions = builder.Configuration.GetSection(nameof(CorsOptions)).Get<CorsOptions>();
-    //     options.AddPolicy(Helper.DefaultPolicy, policyBuilder =>
-    //     {
-    //         if (builder.Environment.IsDevelopment())
-    //         {
-    //             policyBuilder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
-    //         }
-    //         else
-    //         {
-    //             policyBuilder
-    //                 .WithOrigins(corsOptions?.AllowedOrigins ?? ["https://whatever-roan-five.vercel.app"])
-    //                 .WithMethods(corsOptions?.AllowedMethods ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
-    //                 .WithHeaders(corsOptions?.AllowedHeaders ?? ["*"])
-    //                 .AllowCredentials();
-    //         }
-    //     });
-    // })
+    .AddCors(options =>
+    {
+        var corsOptions = builder.Configuration.GetSection(nameof(CorsOptions)).Get<CorsOptions>();
+        options.AddPolicy(Helper.DefaultPolicy, policyBuilder =>
+        {
+            if (builder.Environment.IsDevelopment())
+            {
+                policyBuilder
+                    .WithOrigins(
+                        "https://kzmlzzhzbnsjrj9w0s3t.lite.vusercontent.net",
+                        "https://v0.dev/chat/joke-app-requirements-etJhPhgl5vq",
+                        "http://localhost:3000",
+                        "http://localhost:3001",
+                        "https://localhost:3000"
+                    )
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials();            }
+            else
+            {
+                policyBuilder
+                    .WithOrigins(corsOptions?.AllowedOrigins ?? ["https://whatever-roan-five.vercel.app"])
+                    .WithMethods(corsOptions?.AllowedMethods ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+                    .WithHeaders(corsOptions?.AllowedHeaders ?? ["*"])
+                    .AllowCredentials();
+            }
+        });
+    })
     .AddApplicationInsightsTelemetry()
     .AddProblemDetails(options =>
     {
@@ -167,6 +176,13 @@ app
     .UseStaticFiles()
     .UseAuthentication()
     .UseAuthorization();
+
+app.UseCors(Helper.DefaultPolicy);
+
+// app.UseCors(policyBuilder =>
+// {
+//     policyBuilder.AllowAnyOrigin();
+// });
     // .UseCors(Helper.DefaultPolicy);
 
 await app.InitializeDatabaseRetryAsync();

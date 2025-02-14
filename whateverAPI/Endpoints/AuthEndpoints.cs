@@ -1,4 +1,6 @@
-﻿using Asp.Versioning;
+﻿using System.Security.Claims;
+using Asp.Versioning;
+using Microsoft.AspNetCore.Mvc;
 using whateverAPI.Helpers;
 using whateverAPI.Models;
 using whateverAPI.Services;
@@ -9,38 +11,104 @@ public class AuthEndpoints : IEndpoints
 {
     public static void MapEndpoints(IEndpointRouteBuilder app)
     {
-        var apiGroup = app.MapGroup("/api");
-        var googleAuthGroup2 = app
-            .MapGroup("/api/auth/google")
-            .WithTags("Authentication")
-            .RequireRateLimiting(Helper.AuthPolicy);
-        var microsoftAuthGroup2 = app
-            .MapGroup("/api/auth/microsoft")
-            .WithTags("Authentication")
-            .RequireRateLimiting(Helper.AuthPolicy);
-        var facebookAuthGroup2 = app
-            .MapGroup("/api/auth/facebook")
-            .WithTags("Authentication")
-            .RequireRateLimiting(Helper.AuthPolicy);
-
-        
         var microsoftAuthGroup = app.NewVersionedApi()
             .MapGroup("/api/v{version:apiVersion}/auth/microsoft")
             .WithTags("Authentication")
             .HasApiVersion(new ApiVersion(1, 0))
             .RequireRateLimiting(Helper.AuthPolicy);
-        
+
         var googleAuthGroup = app.NewVersionedApi()
             .MapGroup("/api/v{version:apiVersion}/auth/google")
             .WithTags("Authentication")
             .HasApiVersion(new ApiVersion(1, 0))
             .RequireRateLimiting(Helper.AuthPolicy);
-        
+
         var facebookAuthGroup = app.NewVersionedApi()
             .MapGroup("/api/v{version:apiVersion}/auth/facebook")
             .WithTags("Authentication")
             .HasApiVersion(new ApiVersion(1, 0))
             .RequireRateLimiting(Helper.AuthPolicy);
+
+        var authGroup = app.NewVersionedApi()
+            .MapGroup("/api/v{version:apiVersion}/auth")
+            .WithTags("Authentication")
+            .HasApiVersion(new ApiVersion(1, 0));
+
+
+        authGroup.MapGet("/status", async Task<IResult> (
+                HttpContext context,
+                IJwtTokenService jwtTokenService) =>
+            {
+                var token = jwtTokenService.GetToken();
+                if (string.IsNullOrEmpty(token))
+                {
+                    return TypedResults.Ok(new { isAuthenticated = false });
+                }
+
+                var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var email = context.User.FindFirst(ClaimTypes.Email)?.Value;
+                var name = context.User.FindFirst(ClaimTypes.Name)?.Value;
+                var role = context.User.FindFirst(ClaimTypes.Role)?.Value;
+
+                return TypedResults.Ok(new
+                {
+                    isAuthenticated = true,
+                    userId,
+                    email,
+                    name,
+                    role
+                });
+            })
+            .WithName("AuthStatus")
+            .WithDescription("Checks if the user is currently authenticated and returns their basic information")
+            .WithSummary("Get authentication status")
+            .WithOpenApi()
+            .Produces<object>(StatusCodes.Status200OK);
+        // .RequireAuthorization(Helper.RequireAuthenticatedUser);
+
+
+        authGroup.MapPost("/login", async Task<IResult> (
+                [FromBody] UserLoginRequest request,
+                IJwtTokenService jwtTokenService,
+                HttpContext context) =>
+            {
+                var jwtToken =
+                    await jwtTokenService.GenerateToken(Guid.CreateVersion7().ToString(), request.Email, request.Name, "local");
+                return !string.IsNullOrEmpty(jwtToken)
+                    ? TypedResults.Ok(new { request.Email, Token = jwtToken })
+                    : context.CreateUnauthorizedProblem("Invalid credentials provided");
+            })
+            .WithName("UserLogin")
+            .WithDescription("Authenticates a user and returns a JWT token for subsequent requests")
+            .WithSummary("Login user")
+            .WithOpenApi()
+            .Accepts<UserLoginRequest>("application/json")
+            .Produces<object>(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+            .AddEndpointFilter<ValidationFilter<UserLoginRequest>>();
+
+
+        // User Logout
+        authGroup.MapPost("/logout", async Task<IResult> (
+                [FromServices] IJwtTokenService jwtTokenService,
+                HttpContext context) =>
+            {
+                var token = jwtTokenService.GetToken();
+                if (string.IsNullOrEmpty(token))
+                {
+                    return context.CreateUnauthorizedProblem("No valid authentication token found");
+                }
+
+                jwtTokenService.InvalidateToken(token);
+                return TypedResults.Ok();
+            })
+            .WithName("UserLogout")
+            .WithDescription("Invalidates the current user's JWT token")
+            .WithSummary("Logout user")
+            .WithOpenApi()
+            .Produces(StatusCodes.Status200OK)
+            .ProducesProblem(StatusCodes.Status401Unauthorized);
 
 // Endpoint to start the OAuth flow
         googleAuthGroup.MapGet("/login", async Task<IResult> (
