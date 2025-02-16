@@ -45,7 +45,8 @@ await builder.Services
                     )
                     .AllowAnyMethod()
                     .AllowAnyHeader()
-                    .AllowCredentials();            }
+                    .AllowCredentials();
+            }
             else
             {
                 policyBuilder
@@ -138,10 +139,6 @@ builder.Services.AddHttpClient<JokeApiService>(client =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-}
-
 app.UseRateLimiter();
 app.MapOpenApi();
 app.MapScalarApiReference(opts =>
@@ -154,19 +151,7 @@ app.MapScalarApiReference(opts =>
         .WithTagSorter(TagSorter.Alpha)
         .WithLayout(ScalarLayout.Modern)
         .WithTitle("Whatever bruh API")
-        .WithDefaultFonts(true)
-        .WithPreferredScheme("Bearer")
-        .WithHttpBasicAuthentication(basic =>
-        {
-            basic.Username = "admin@admin.com";
-            basic.Password = "admin@admin.com";
-        })
-        .WithHttpBearerAuthentication(bearer => bearer.Token = Helper.AuthToken)
-        .WithOAuth2Authentication(oauth =>
-        {
-            oauth.Scopes = ["openid", "email", "profile"];
-            oauth.ClientId = builder.Configuration["GoogleOptions:ClientId"];
-        });
+        .WithDefaultFonts(true);
 });
 
 
@@ -178,12 +163,6 @@ app
     .UseAuthorization();
 
 app.UseCors(Helper.DefaultPolicy);
-
-// app.UseCors(policyBuilder =>
-// {
-//     policyBuilder.AllowAnyOrigin();
-// });
-    // .UseCors(Helper.DefaultPolicy);
 
 await app.InitializeDatabaseRetryAsync();
 

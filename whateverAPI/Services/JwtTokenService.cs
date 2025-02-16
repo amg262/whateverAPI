@@ -120,7 +120,7 @@ public class JwtTokenService : IJwtTokenService
         // Check if the token exists in the authorization header
         token = _httpContextAccessor.HttpContext?.Request.Headers.Authorization.FirstOrDefault()?.Split(" ").Last();
 
-        return !string.IsNullOrEmpty(token)
+        return !string.IsNullOrEmpty(token) && (token.Equals("null", StringComparison.OrdinalIgnoreCase) == false)
             ? token
             : null;
     }
@@ -170,7 +170,7 @@ public class JwtTokenService : IJwtTokenService
     /// Generates a JWT token with claims including the user's IP address.
     /// </summary>
     /// <returns>A JWT token string.</returns>
-    public async Task<string> GenerateToken(string? userId, string? name, string? email, string? provider, bool saveCookie = true)
+    public async Task<string> GenerateToken(string? userId, string? email, string? name, string? provider, bool saveCookie = true)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
