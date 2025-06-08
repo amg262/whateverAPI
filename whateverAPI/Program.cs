@@ -41,7 +41,9 @@ await builder.Services
                         "https://v0.dev/chat/joke-app-requirements-etJhPhgl5vq",
                         "http://localhost:3000",
                         "http://localhost:3001",
-                        "https://localhost:3000"
+                        "https://localhost:3000",
+                        "http://localhost:5172",
+                        "http://localhost:5173"
                     )
                     .AllowAnyMethod()
                     .AllowAnyHeader()

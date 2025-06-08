@@ -74,7 +74,12 @@ public class User
         IsActive = true,
     };
     
-    public static UserAuthor ToUserAuthor(User? user) => new()
+    public static UserAuthor ToUserAuthor(User? user) => user == null ? new()
+    {
+        Id = Guid.Empty,
+        Name = "Unknown User",
+        Email = "unknown@example.com",
+    } : new()
     {
         Id = user.Id,
         Name = user.Name,

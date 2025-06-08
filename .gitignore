@@ -4,6 +4,7 @@ obj/
 riderModule.iml
 /_ReSharper.Caches/
 .idea/
+react-jokes-frontend/node_modules/
 
 whateverAPI.sln.DotSettings.user
 

@@ -9,6 +9,8 @@ namespace whateverAPI.Endpoints;
 
 public class AuthEndpoints : IEndpoints
 {
+    private static string GetFrontendUrl() => Environment.GetEnvironmentVariable("FRONTEND_URL") ?? "http://localhost:5173";
+
     public static void MapEndpoints(IEndpointRouteBuilder app)
     {
         var microsoftAuthGroup = app.NewVersionedApi()
@@ -113,7 +115,7 @@ public class AuthEndpoints : IEndpoints
 // Endpoint to start the OAuth flow
         googleAuthGroup.MapGet("/login", async Task<IResult> (
                 IGoogleAuthService authService,
-                HttpResponse response,
+                HttpRequest request,
                 HttpContext context) =>
             {
                 // Generate the Google OAuth URL and redirect the user to it
@@ -141,11 +143,13 @@ public class AuthEndpoints : IEndpoints
             {
                 // Get the authorization code from the query string
                 var code = request.Query["code"].ToString();
+                var state = request.Query["state"].ToString();
 
                 if (string.IsNullOrEmpty(code))
                 {
-                    return context.CreateNotFoundProblem("Authorization code", string.Empty);
-                    return TypedResults.BadRequest("No authorization code provided");
+                    // Redirect to frontend with error
+                    var errorUrl = $"{GetFrontendUrl()}/auth/callback?error=no_code";
+                    return TypedResults.Redirect(errorUrl);
                 }
 
                 try
@@ -157,24 +161,24 @@ public class AuthEndpoints : IEndpoints
 
                     if (newUser == null)
                     {
-                        return context.CreateBadRequestProblem("User account be created");
+                        var errorUrl = $"{GetFrontendUrl()}/auth/callback?error=user_creation_failed";
+                        return TypedResults.Redirect(errorUrl);
                     }
 
                     var user = await userService.GetOrCreateUserFromOAuthAsync(newUser, ct);
 
                     // Generate your application's JWT
-                    var token = jwtService.GenerateToken(user.Id.ToString(), user.Email, user.Name, Helper.GoogleProvider);
+                    var token = await jwtService.GenerateToken(user.Id.ToString(), user.Email, user.Name, Helper.GoogleProvider);
 
-                    // Return the user information and token
-                    return TypedResults.Ok(new
-                    {
-                        token,
-                        user
-                    });
+                    // Redirect to frontend with success and token
+                    var successUrl = $"{GetFrontendUrl()}/auth/callback?token={Uri.EscapeDataString(token)}&provider=google";
+                    return TypedResults.Redirect(successUrl);
                 }
                 catch (Exception ex)
                 {
-                    return TypedResults.BadRequest(new { error = ex.Message });
+                    // Redirect to frontend with error
+                    var errorUrl = $"{GetFrontendUrl()}/auth/callback?error={Uri.EscapeDataString(ex.Message)}";
+                    return TypedResults.Redirect(errorUrl);
                 }
             })
             .WithName("GoogleCallback")
@@ -182,7 +186,7 @@ public class AuthEndpoints : IEndpoints
                 "Handles the OAuth2 callback from Google, exchanging the authorization code for user information and generating a JWT token")
             .WithSummary("Complete google authentication")
             .WithOpenApi()
-            .Produces<GoogleUserInfo>(StatusCodes.Status200OK, "application/json")
+            .Produces<object>(StatusCodes.Status200OK, "application/json")
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
@@ -191,7 +195,7 @@ public class AuthEndpoints : IEndpoints
 // Endpoint to start the Microsoft OAuth flow
         microsoftAuthGroup.MapGet("/login", async Task<IResult> (
                 IMicrosoftAuthService authService,
-                HttpResponse response,
+                HttpRequest request,
                 HttpContext context) =>
             {
                 // Generate the Microsoft OAuth URL for the initial authentication request
@@ -214,14 +218,17 @@ public class AuthEndpoints : IEndpoints
                 IMicrosoftAuthService authService,
                 IJwtTokenService jwtService,
                 UserService userService,
-                HttpContext context) =>
+                HttpContext context,
+                CancellationToken ct) =>
             {
                 var code = request.Query["code"].ToString();
+                var state = request.Query["state"].ToString();
 
                 if (string.IsNullOrEmpty(code))
                 {
-                    return context.CreateNotFoundProblem("Authorization code", string.Empty);
-                    return TypedResults.BadRequest("No authorization code provided");
+                    // Redirect to frontend with error
+                    var errorUrl = $"{GetFrontendUrl()}/auth/callback?error=no_code";
+                    return TypedResults.Redirect(errorUrl);
                 }
 
                 try
@@ -230,28 +237,25 @@ public class AuthEndpoints : IEndpoints
 
                     var authUser = OAuthUserInfo.FromUserInfoAsync(microsoftUser);
 
-                    // var newUser = OAuthUserInfo.FromMicrosoftUserInfo(microsoftUser);
-
                     if (authUser == null)
                     {
-                        return context.CreateBadRequestProblem("User account cannot be created");
+                        var errorUrl = $"{GetFrontendUrl()}/auth/callback?error=user_creation_failed";
+                        return TypedResults.Redirect(errorUrl);
                     }
 
-                    var user = await userService.GetOrCreateUserFromOAuthAsync(authUser);
+                    var user = await userService.GetOrCreateUserFromOAuthAsync(authUser, ct);
 
-                    var token = jwtService.GenerateToken(user.Id.ToString(), user.Email, user.Name, Helper.GoogleProvider);
+                    var token = await jwtService.GenerateToken(user.Id.ToString(), user.Email, user.Name, Helper.MicrosoftProvider);
 
-
-                    return TypedResults.Ok(new
-                    {
-                        token,
-                        user
-                    });
+                    // Redirect to frontend with success and token
+                    var successUrl = $"{GetFrontendUrl()}/auth/callback?token={Uri.EscapeDataString(token)}&provider=microsoft";
+                    return TypedResults.Redirect(successUrl);
                 }
                 catch (Exception ex)
                 {
-                    return context.CreateBadRequestProblem(ex.Message);
-                    return TypedResults.BadRequest(new { error = ex.Message });
+                    // Redirect to frontend with error
+                    var errorUrl = $"{GetFrontendUrl()}/auth/callback?error={Uri.EscapeDataString(ex.Message)}";
+                    return TypedResults.Redirect(errorUrl);
                 }
             })
             .WithName("MicrosoftCallback")
@@ -259,7 +263,7 @@ public class AuthEndpoints : IEndpoints
                 "Handles the OAuth2 callback from Microsoft, exchanging the authorization code for user information and generating a JWT token")
             .WithSummary("Complete Microsoft authentication")
             .WithOpenApi()
-            .Produces<MicrosoftUserInfo>(StatusCodes.Status200OK, "application/json")
+            .Produces<object>(StatusCodes.Status200OK, "application/json")
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
@@ -267,7 +271,7 @@ public class AuthEndpoints : IEndpoints
 
         facebookAuthGroup.MapGet("/login", async Task<IResult> (
                 IFacebookAuthService authService,
-                HttpResponse response,
+                HttpRequest request,
                 HttpContext context) =>
             {
                 // Generate the Facebook OAuth URL that the user will use to authenticate
@@ -296,10 +300,13 @@ public class AuthEndpoints : IEndpoints
             {
                 // Extract the authorization code from the callback
                 var code = request.Query["code"].ToString();
+                var state = request.Query["state"].ToString();
 
                 if (string.IsNullOrEmpty(code))
                 {
-                    return context.CreateNotFoundProblem("Authorization code", string.Empty);
+                    // Redirect to frontend with error
+                    var errorUrl = $"{GetFrontendUrl()}/auth/callback?error=no_code";
+                    return TypedResults.Redirect(errorUrl);
                 }
 
                 try
@@ -312,32 +319,29 @@ public class AuthEndpoints : IEndpoints
 
                     if (authUser == null)
                     {
-                        return context.CreateBadRequestProblem("User account cannot be created");
+                        var errorUrl = $"{GetFrontendUrl()}/auth/callback?error=user_creation_failed";
+                        return TypedResults.Redirect(errorUrl);
                     }
 
                     // Create or update the user in our system
                     var user = await userService.GetOrCreateUserFromOAuthAsync(authUser, ct);
 
                     // Generate a JWT token for subsequent API calls
-                    var token = jwtService.GenerateToken(
+                    var token = await jwtService.GenerateToken(
                         user.Id.ToString(),
                         user.Email,
                         user.Name,
                         Helper.FacebookProvider);
 
-                    // Return both the user information and the JWT token
-                    return TypedResults.Ok(new
-                    {
-                        token,
-                        user
-                    });
+                    // Redirect to frontend with success and token
+                    var successUrl = $"{GetFrontendUrl()}/auth/callback?token={Uri.EscapeDataString(token)}&provider=facebook";
+                    return TypedResults.Redirect(successUrl);
                 }
                 catch (Exception ex)
                 {
-                    return context.CreateExternalServiceProblem(
-                        "Facebook Authentication",
-                        "Failed to process Facebook authentication",
-                        ex);
+                    // Redirect to frontend with error
+                    var errorUrl = $"{GetFrontendUrl()}/auth/callback?error={Uri.EscapeDataString(ex.Message)}";
+                    return TypedResults.Redirect(errorUrl);
                 }
             })
             .WithName("FacebookCallback")
