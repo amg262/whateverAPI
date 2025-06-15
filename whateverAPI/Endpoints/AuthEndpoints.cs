@@ -120,17 +120,17 @@ public class AuthEndpoints : IEndpoints
                 HttpRequest request,
                 HttpContext context) =>
             {
-                // Generate the Google OAuth URL and redirect the user to it
+                // Generate the Google OAuth URL and return it as JSON
                 var authUrl = authService.GenerateOAuthUrl();
                 return !string.IsNullOrEmpty(authUrl)
-                    ? TypedResults.Redirect(authUrl)
+                    ? TypedResults.Ok(new { authUrl })
                     : context.CreateNotFoundProblem("Google OAuth URL", string.Empty);
             })
             .WithName("GoogleLogin")
-            .WithDescription("Initiates the Google OAuth2 authentication flow by generating an authorization URL")
-            .WithSummary("Start Google authentication")
+            .WithDescription("Generates a Google OAuth2 authorization URL for client-side redirect")
+            .WithSummary("Get Google authentication URL")
             .WithOpenApi()
-            .Produces<string>(StatusCodes.Status200OK, "application/json")
+            .Produces<object>(StatusCodes.Status200OK, "application/json")
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
@@ -201,17 +201,17 @@ public class AuthEndpoints : IEndpoints
                 HttpRequest request,
                 HttpContext context) =>
             {
-                // Generate the Microsoft OAuth URL for the initial authentication request
+                // Generate the Microsoft OAuth URL and return it as JSON
                 var authUrl = authService.GenerateOAuthUrl();
                 return !string.IsNullOrEmpty(authUrl)
-                    ? TypedResults.Redirect(authUrl)
+                    ? TypedResults.Ok(new { authUrl })
                     : context.CreateNotFoundProblem("Microsoft OAuth URL", string.Empty);
             })
             .WithName("MicrosoftLogin")
-            .WithDescription("Initiates the Microsoft OAuth2 authentication flow by generating an authorization URL")
-            .WithSummary("Start Microsoft authentication")
+            .WithDescription("Generates a Microsoft OAuth2 authorization URL for client-side redirect")
+            .WithSummary("Get Microsoft authentication URL")
             .WithOpenApi()
-            .Produces<string>(StatusCodes.Status200OK, "application/json")
+            .Produces<object>(StatusCodes.Status200OK, "application/json")
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
@@ -278,18 +278,18 @@ public class AuthEndpoints : IEndpoints
                 HttpRequest request,
                 HttpContext context) =>
             {
-                // Generate the Facebook OAuth URL that the user will use to authenticate
+                // Generate the Facebook OAuth URL and return it as JSON
                 var authUrl = authService.GenerateOAuthUrl();
 
                 return !string.IsNullOrEmpty(authUrl)
-                    ? TypedResults.Redirect(authUrl)
+                    ? TypedResults.Ok(new { authUrl })
                     : context.CreateNotFoundProblem("Facebook OAuth URL", string.Empty);
             })
             .WithName("FacebookLogin")
-            .WithDescription("Initiates the Facebook OAuth2 authentication flow by generating an authorization URL")
-            .WithSummary("Start Facebook authentication")
+            .WithDescription("Generates a Facebook OAuth2 authorization URL for client-side redirect")
+            .WithSummary("Get Facebook authentication URL")
             .WithOpenApi()
-            .Produces<string>(StatusCodes.Status200OK, "application/json")
+            .Produces<object>(StatusCodes.Status200OK, "application/json")
             .ProducesValidationProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status500InternalServerError);
 
