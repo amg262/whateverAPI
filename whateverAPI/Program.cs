@@ -59,10 +59,9 @@ await builder.Services
             
             {
                 policyBuilder
-                    .WithOrigins("https://joke-react.vercel.app")
-                    // .WithOrigins(corsOptions?.AllowedOrigins ?? ["https://whatever-roan-five.vercel.app"])
-                    .WithMethods(corsOptions?.AllowedMethods ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
-                    .WithHeaders(corsOptions?.AllowedHeaders ?? ["*"])
+                    .WithOrigins(corsOptions?.AllowedOrigins?.ToArray() ?? ["https://joke-react.vercel.app"])
+                    .WithMethods(corsOptions?.AllowedMethods?.ToArray() ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+                    .WithHeaders(corsOptions?.AllowedHeaders?.ToArray() ?? ["*"])
                     .AllowCredentials();
             }
         });
