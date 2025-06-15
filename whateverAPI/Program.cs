@@ -46,7 +46,8 @@ await builder.Services
                         "http://localhost:3001",
                         "https://localhost:3000",
                         "http://localhost:5172",
-                        "http://localhost:5173"
+                        "http://localhost:5173",
+                        "https://joke-react.vercel.app"
                     )
                     .AllowAnyMethod()
                     .AllowAnyHeader()
