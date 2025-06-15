@@ -81,8 +81,6 @@ jobs:
         with:
           name: .net-app
           path: .
-
-
         
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
