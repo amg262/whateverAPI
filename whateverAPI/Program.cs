@@ -47,13 +47,16 @@ await builder.Services
                         "https://localhost:3000",
                         "http://localhost:5172",
                         "http://localhost:5173",
+                        "http://localhost:5173/login",
                         "https://joke-react.vercel.app"
+                        
                     )
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials();
             }
             else
+            
             {
                 policyBuilder
                     .WithOrigins(corsOptions?.AllowedOrigins ?? ["https://whatever-roan-five.vercel.app"])
@@ -63,7 +66,7 @@ await builder.Services
             }
         });
     })
-    .AddApplicationInsightsTelemetry()
+    // .AddApplicationInsightsTelemetry()
     .AddProblemDetails(options =>
     {
         options.CustomizeProblemDetails = context =>
