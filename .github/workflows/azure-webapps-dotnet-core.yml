@@ -21,7 +21,7 @@ name: Build and deploy ASP.Net Core app to an Azure Web App
 
 env:
   AZURE_WEBAPP_NAME: whateverbruh    # set this to the name of your Azure Web App
-  AZURE_WEBAPP_PACKAGE_PATH: './whateverAPI'      # set this to the path to your web app project
+  AZURE_WEBAPP_PACKAGE_PATH: '.'      # set this to the published output path
   DOTNET_VERSION: '9'                 # set this to the .NET Core version to use
 
 on:
