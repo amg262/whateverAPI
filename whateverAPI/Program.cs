@@ -39,6 +39,9 @@ await builder.Services
                     .WithOrigins(
                         "https://kzmlzzhzbnsjrj9w0s3t.lite.vusercontent.net",
                         "https://v0.dev/chat/joke-app-requirements-etJhPhgl5vq",
+                        "https://v0.dev/chat/next-js-application-IyOBgeQiSj7",
+                        "https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3--5173--2e6e5e13.local-credentialless.webcontainer-api.io/login",
+                        "https://bolt.new/~/sb1-tqinhzea",
                         "http://localhost:3000",
                         "http://localhost:3001",
                         "https://localhost:3000",
@@ -83,6 +86,7 @@ await builder.Services
                 new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtOptions:Secret"] ?? string.Empty)),
             ValidateActor = true,
             RequireSignedTokens = true,
+            NameClaimType = "sub", // Map the 'sub' claim to ClaimTypes.NameIdentifier
         };
         options.Events = new JwtBearerEvents
         {

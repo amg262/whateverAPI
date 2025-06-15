@@ -121,7 +121,7 @@ public class AuthEndpoints : IEndpoints
                 // Generate the Google OAuth URL and redirect the user to it
                 var authUrl = authService.GenerateOAuthUrl();
                 return !string.IsNullOrEmpty(authUrl)
-                    ? TypedResults.Ok(authUrl)
+                    ? TypedResults.Redirect(authUrl)
                     : context.CreateNotFoundProblem("Google OAuth URL", string.Empty);
             })
             .WithName("GoogleLogin")
@@ -201,7 +201,7 @@ public class AuthEndpoints : IEndpoints
                 // Generate the Microsoft OAuth URL for the initial authentication request
                 var authUrl = authService.GenerateOAuthUrl();
                 return !string.IsNullOrEmpty(authUrl)
-                    ? TypedResults.Ok(authUrl)
+                    ? TypedResults.Redirect(authUrl)
                     : context.CreateNotFoundProblem("Microsoft OAuth URL", string.Empty);
             })
             .WithName("MicrosoftLogin")
@@ -278,7 +278,7 @@ public class AuthEndpoints : IEndpoints
                 var authUrl = authService.GenerateOAuthUrl();
 
                 return !string.IsNullOrEmpty(authUrl)
-                    ? TypedResults.Ok(authUrl)
+                    ? TypedResults.Redirect(authUrl)
                     : context.CreateNotFoundProblem("Facebook OAuth URL", string.Empty);
             })
             .WithName("FacebookLogin")

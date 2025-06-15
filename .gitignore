@@ -21,3 +21,5 @@ whateverAPI/http-client.private.env.json
 whateverAPI/appsettings.Development.json
 
 whateverAPI/index.html
+
+joke-app/.bolt/
