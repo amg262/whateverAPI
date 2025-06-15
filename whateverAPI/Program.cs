@@ -28,44 +28,44 @@ await builder.Services
     .AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString(Helper.DefaultConnection), o =>
             o.EnableRetryOnFailure()).EnableDetailedErrors().EnableSensitiveDataLogging())
-    .AddCors(options =>
-    {
-        var corsOptions = builder.Configuration.GetSection(nameof(CorsOptions)).Get<CorsOptions>();
-        options.AddPolicy(Helper.DefaultPolicy, policyBuilder =>
-        {
-            if (builder.Environment.IsDevelopment())
-            {
-                policyBuilder
-                    .WithOrigins(
-                        "https://kzmlzzhzbnsjrj9w0s3t.lite.vusercontent.net",
-                        "https://v0.dev/chat/joke-app-requirements-etJhPhgl5vq",
-                        "https://v0.dev/chat/next-js-application-IyOBgeQiSj7",
-                        "https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3--5173--2e6e5e13.local-credentialless.webcontainer-api.io/login",
-                        "https://bolt.new/~/sb1-tqinhzea",
-                        "http://localhost:3000",
-                        "http://localhost:3001",
-                        "https://localhost:3000",
-                        "http://localhost:5172",
-                        "http://localhost:5173",
-                        "http://localhost:5173/login",
-                        "https://joke-react.vercel.app"
-                        
-                    )
-                    .AllowAnyMethod()
-                    .AllowAnyHeader()
-                    .AllowCredentials();
-            }
-            else
-            
-            {
-                policyBuilder
-                    .WithOrigins(corsOptions?.AllowedOrigins?.ToArray() ?? ["https://joke-react.vercel.app"])
-                    .WithMethods(corsOptions?.AllowedMethods?.ToArray() ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
-                    .WithHeaders(corsOptions?.AllowedHeaders?.ToArray() ?? ["*"])
-                    .AllowCredentials();
-            }
-        });
-    })
+    // .AddCors(options =>
+    // {
+    //     var corsOptions = builder.Configuration.GetSection(nameof(CorsOptions)).Get<CorsOptions>();
+    //     options.AddPolicy(Helper.DefaultPolicy, policyBuilder =>
+    //     {
+    //         if (builder.Environment.IsDevelopment())
+    //         {
+    //             policyBuilder
+    //                 .WithOrigins(
+    //                     "https://kzmlzzhzbnsjrj9w0s3t.lite.vusercontent.net",
+    //                     "https://v0.dev/chat/joke-app-requirements-etJhPhgl5vq",
+    //                     "https://v0.dev/chat/next-js-application-IyOBgeQiSj7",
+    //                     "https://zp1v56uxy8rdx5ypatb0ockcb9tr6a-oci3--5173--2e6e5e13.local-credentialless.webcontainer-api.io/login",
+    //                     "https://bolt.new/~/sb1-tqinhzea",
+    //                     "http://localhost:3000",
+    //                     "http://localhost:3001",
+    //                     "https://localhost:3000",
+    //                     "http://localhost:5172",
+    //                     "http://localhost:5173",
+    //                     "http://localhost:5173/login",
+    //                     "https://joke-react.vercel.app"
+    //                     
+    //                 )
+    //                 .AllowAnyMethod()
+    //                 .AllowAnyHeader()
+    //                 .AllowCredentials();
+    //         }
+    //         else
+    //         
+    //         {
+    //             policyBuilder
+    //                 .WithOrigins(corsOptions?.AllowedOrigins?.ToArray() ?? ["https://joke-react.vercel.app"])
+    //                 .WithMethods(corsOptions?.AllowedMethods?.ToArray() ?? ["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+    //                 .WithHeaders(corsOptions?.AllowedHeaders?.ToArray() ?? ["*"])
+    //                 .AllowCredentials();
+    //         }
+    //     });
+    // })
     // .AddApplicationInsightsTelemetry()
     .AddProblemDetails(options =>
     {
@@ -173,7 +173,7 @@ app
     .UseAuthentication()
     .UseAuthorization();
 
-app.UseCors(Helper.DefaultPolicy);
+// app.UseCors(Helper.DefaultPolicy);
 
 await app.InitializeDatabaseRetryAsync();
 
