@@ -120,6 +120,7 @@ builder.Services.AddOptions<MicrosoftOptions>().BindConfiguration(nameof(Microso
 builder.Services.AddOptions<FacebookOptions>().BindConfiguration(nameof(FacebookOptions));
 builder.Services.AddOptions<JokeApiOptions>().BindConfiguration(nameof(JokeApiOptions));
 builder.Services.AddOptions<CorsOptions>().BindConfiguration(nameof(CorsOptions));
+builder.Services.AddOptions<FrontendOptions>().BindConfiguration(nameof(FrontendOptions));
 
 
 builder.Services

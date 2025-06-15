@@ -1,16 +1,16 @@
 ﻿using System.Security.Claims;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using whateverAPI.Helpers;
 using whateverAPI.Models;
+using whateverAPI.Options;
 using whateverAPI.Services;
 
 namespace whateverAPI.Endpoints;
 
 public class AuthEndpoints : IEndpoints
 {
-    private static string GetFrontendUrl() => Environment.GetEnvironmentVariable("FRONTEND_URL") ?? "http://localhost:5173";
-
     public static void MapEndpoints(IEndpointRouteBuilder app)
     {
         var microsoftAuthGroup = app.NewVersionedApi()
@@ -139,6 +139,7 @@ public class AuthEndpoints : IEndpoints
                 IJwtTokenService jwtService,
                 UserService userService,
                 HttpContext context,
+                IOptions<FrontendOptions> frontendOptions,
                 CancellationToken ct) =>
             {
                 // Get the authorization code from the query string
@@ -148,7 +149,7 @@ public class AuthEndpoints : IEndpoints
                 if (string.IsNullOrEmpty(code))
                 {
                     // Redirect to frontend with error
-                    var errorUrl = $"{GetFrontendUrl()}/auth/callback?error=no_code";
+                    var errorUrl = $"{frontendOptions.Value.GetCallbackUrl()}?error=no_code";
                     return TypedResults.Redirect(errorUrl);
                 }
 
@@ -161,7 +162,7 @@ public class AuthEndpoints : IEndpoints
 
                     if (newUser == null)
                     {
-                        var errorUrl = $"{GetFrontendUrl()}/auth/callback?error=user_creation_failed";
+                        var errorUrl = $"{frontendOptions.Value.GetCallbackUrl()}?error=user_creation_failed";
                         return TypedResults.Redirect(errorUrl);
                     }
 
@@ -171,13 +172,13 @@ public class AuthEndpoints : IEndpoints
                     var token = await jwtService.GenerateToken(user.Id.ToString(), user.Email, user.Name, Helper.GoogleProvider);
 
                     // Redirect to frontend with success and token
-                    var successUrl = $"{GetFrontendUrl()}/auth/callback?token={Uri.EscapeDataString(token)}&provider=google";
+                    var successUrl = $"{frontendOptions.Value.GetCallbackUrl()}?token={Uri.EscapeDataString(token)}&provider=google";
                     return TypedResults.Redirect(successUrl);
                 }
                 catch (Exception ex)
                 {
                     // Redirect to frontend with error
-                    var errorUrl = $"{GetFrontendUrl()}/auth/callback?error={Uri.EscapeDataString(ex.Message)}";
+                    var errorUrl = $"{frontendOptions.Value.GetCallbackUrl()}?error={Uri.EscapeDataString(ex.Message)}";
                     return TypedResults.Redirect(errorUrl);
                 }
             })
@@ -219,6 +220,7 @@ public class AuthEndpoints : IEndpoints
                 IJwtTokenService jwtService,
                 UserService userService,
                 HttpContext context,
+                IOptions<FrontendOptions> frontendOptions,
                 CancellationToken ct) =>
             {
                 var code = request.Query["code"].ToString();
@@ -227,7 +229,7 @@ public class AuthEndpoints : IEndpoints
                 if (string.IsNullOrEmpty(code))
                 {
                     // Redirect to frontend with error
-                    var errorUrl = $"{GetFrontendUrl()}/auth/callback?error=no_code";
+                    var errorUrl = $"{frontendOptions.Value.GetCallbackUrl()}?error=no_code";
                     return TypedResults.Redirect(errorUrl);
                 }
 
@@ -239,7 +241,7 @@ public class AuthEndpoints : IEndpoints
 
                     if (authUser == null)
                     {
-                        var errorUrl = $"{GetFrontendUrl()}/auth/callback?error=user_creation_failed";
+                        var errorUrl = $"{frontendOptions.Value.GetCallbackUrl()}?error=user_creation_failed";
                         return TypedResults.Redirect(errorUrl);
                     }
 
@@ -248,13 +250,13 @@ public class AuthEndpoints : IEndpoints
                     var token = await jwtService.GenerateToken(user.Id.ToString(), user.Email, user.Name, Helper.MicrosoftProvider);
 
                     // Redirect to frontend with success and token
-                    var successUrl = $"{GetFrontendUrl()}/auth/callback?token={Uri.EscapeDataString(token)}&provider=microsoft";
+                    var successUrl = $"{frontendOptions.Value.GetCallbackUrl()}?token={Uri.EscapeDataString(token)}&provider=microsoft";
                     return TypedResults.Redirect(successUrl);
                 }
                 catch (Exception ex)
                 {
                     // Redirect to frontend with error
-                    var errorUrl = $"{GetFrontendUrl()}/auth/callback?error={Uri.EscapeDataString(ex.Message)}";
+                    var errorUrl = $"{frontendOptions.Value.GetCallbackUrl()}?error={Uri.EscapeDataString(ex.Message)}";
                     return TypedResults.Redirect(errorUrl);
                 }
             })
@@ -296,6 +298,7 @@ public class AuthEndpoints : IEndpoints
                 IJwtTokenService jwtService,
                 UserService userService,
                 HttpContext context,
+                IOptions<FrontendOptions> frontendOptions,
                 CancellationToken ct) =>
             {
                 // Extract the authorization code from the callback
@@ -305,7 +308,7 @@ public class AuthEndpoints : IEndpoints
                 if (string.IsNullOrEmpty(code))
                 {
                     // Redirect to frontend with error
-                    var errorUrl = $"{GetFrontendUrl()}/auth/callback?error=no_code";
+                    var errorUrl = $"{frontendOptions.Value.GetCallbackUrl()}?error=no_code";
                     return TypedResults.Redirect(errorUrl);
                 }
 
@@ -319,7 +322,7 @@ public class AuthEndpoints : IEndpoints
 
                     if (authUser == null)
                     {
-                        var errorUrl = $"{GetFrontendUrl()}/auth/callback?error=user_creation_failed";
+                        var errorUrl = $"{frontendOptions.Value.GetCallbackUrl()}?error=user_creation_failed";
                         return TypedResults.Redirect(errorUrl);
                     }
 
@@ -334,13 +337,13 @@ public class AuthEndpoints : IEndpoints
                         Helper.FacebookProvider);
 
                     // Redirect to frontend with success and token
-                    var successUrl = $"{GetFrontendUrl()}/auth/callback?token={Uri.EscapeDataString(token)}&provider=facebook";
+                    var successUrl = $"{frontendOptions.Value.GetCallbackUrl()}?token={Uri.EscapeDataString(token)}&provider=facebook";
                     return TypedResults.Redirect(successUrl);
                 }
                 catch (Exception ex)
                 {
                     // Redirect to frontend with error
-                    var errorUrl = $"{GetFrontendUrl()}/auth/callback?error={Uri.EscapeDataString(ex.Message)}";
+                    var errorUrl = $"{frontendOptions.Value.GetCallbackUrl()}?error={Uri.EscapeDataString(ex.Message)}";
                     return TypedResults.Redirect(errorUrl);
                 }
             })
