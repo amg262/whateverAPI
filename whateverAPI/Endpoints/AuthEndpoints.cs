@@ -52,6 +52,8 @@ public class AuthEndpoints : IEndpoints
                 var name = context.User.FindFirst(ClaimTypes.Name)?.Value;
                 var role = context.User.FindFirst(ClaimTypes.Role)?.Value;
 
+                
+                
                 return TypedResults.Ok(new
                 {
                     isAuthenticated = true,
