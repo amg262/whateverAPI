@@ -23,3 +23,8 @@ whateverAPI/appsettings.Development.json
 whateverAPI/index.html
 
 joke-app/.bolt/
+
+.DS_Store
+**/.DS_Store
+
+.claude/settings.local.json
