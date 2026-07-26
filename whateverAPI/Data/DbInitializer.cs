@@ -55,7 +55,7 @@ public static class DbInitializer
     /// - Connection timeouts
     /// </remarks>
     public static async Task InitializeDatabaseRetryAsync(this WebApplication app, int maxRetryAttempts = 8,
-        int maxDelaySeconds = 15)
+        int maxDelaySeconds = 15, int overallTimeoutSeconds = 45)
     {
         var retryPolicy = Policy
             .Handle<Exception>()
@@ -78,23 +78,29 @@ public static class DbInitializer
         using var scope = app.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
+        // Hard ceiling on the whole attempt. Hosts that front the app (IIS/ANCM on Azure
+        // App Service, container health checks) give startup a fixed budget and kill the
+        // process when it is exceeded, so this has to finish well inside that budget.
+        using var startupTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(overallTimeoutSeconds));
+
         try
         {
-            await retryPolicy.ExecuteAsync(async () =>
+            await retryPolicy.ExecuteAsync(async ct =>
             {
-                await context.Database.MigrateAsync();
+                await context.Database.MigrateAsync(ct);
                 await Seed(app, context);
-            });
+            }, startupTimeout.Token);
         }
         catch (Exception ex)
         {
-            // Startup must not block on the database forever. If it does, Kestrel never
-            // binds, the host never answers a request, and the platform restarts us into
-            // the same wait - which reads as a hard outage rather than a degraded API.
-            // Start anyway and let individual requests surface the failure.
+            // Startup must not block on the database. If it does, the host never binds,
+            // never answers a request, and gets restarted into the same wait - a hard
+            // outage rather than a degraded API. Start anyway and let individual
+            // requests surface the failure; the app recovers once the database is back.
             app.Logger.LogCritical(ex,
-                "Database initialization failed after {MaxRetries} attempts. Starting anyway - " +
-                "requests that need the database will fail until it is reachable",
+                "Database initialization did not complete within {Timeout}s ({MaxRetries} attempts max). " +
+                "Starting anyway - requests that need the database will fail until it is reachable",
+                overallTimeoutSeconds,
                 maxRetryAttempts);
         }
     }
