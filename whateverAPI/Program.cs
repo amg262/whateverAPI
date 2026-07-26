@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json.Serialization;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,13 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    // Serialize/deserialize enums (JokeType) as strings so clients can send
+    // "Joke" instead of the underlying integer, and read a name back.
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 await builder.Services
     .AddOpenApi()
