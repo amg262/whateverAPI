@@ -156,7 +156,12 @@ app
     .UseAuthentication()
     .UseAuthorization();
 
-await app.InitializeDatabaseRetryAsync();
+// Migrate and seed after the host is listening, not before it. Hosts that front the
+// app give startup a fixed budget - IIS/ANCM on Azure App Service answers every request
+// with HTTP 500.37 once it is exceeded - and a database that is slow or unreachable will
+// exceed any budget. Off the startup path, the app always binds; database-backed
+// requests fail until the database is reachable, then start working without a restart.
+app.Lifetime.ApplicationStarted.Register(() => _ = app.InitializeDatabaseRetryAsync());
 
 app.MapEndpointsFromAssembly();
 

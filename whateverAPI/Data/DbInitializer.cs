@@ -54,8 +54,8 @@ public static class DbInitializer
     /// - Temporary database unavailability
     /// - Connection timeouts
     /// </remarks>
-    public static async Task InitializeDatabaseRetryAsync(this WebApplication app, int maxRetryAttempts = 8,
-        int maxDelaySeconds = 15, int overallTimeoutSeconds = 45)
+    public static async Task InitializeDatabaseRetryAsync(this WebApplication app, int maxRetryAttempts = 20,
+        int maxDelaySeconds = 30, int overallTimeoutSeconds = 300)
     {
         var retryPolicy = Policy
             .Handle<Exception>()
@@ -78,9 +78,9 @@ public static class DbInitializer
         using var scope = app.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        // Hard ceiling on the whole attempt. Hosts that front the app (IIS/ANCM on Azure
-        // App Service, container health checks) give startup a fixed budget and kill the
-        // process when it is exceeded, so this has to finish well inside that budget.
+        // Hard ceiling on the whole attempt so a permanently unreachable database cannot
+        // hold a scope and a connection open indefinitely. This runs after the host is
+        // listening (see Program.cs), so it is not competing with a startup time limit.
         using var startupTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(overallTimeoutSeconds));
 
         try
