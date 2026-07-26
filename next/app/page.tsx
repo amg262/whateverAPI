@@ -1,14 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { ApiError, Joke, jokesApi } from "@/app/lib/api";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { ApiError, auth, Joke, jokesApi } from "@/app/lib/api";
 import { JokeForm } from "@/app/components/JokeForm";
+import { SignIn } from "@/app/components/SignIn";
 import { Button } from "@/app/components/ui/Button";
 
 export default function Home() {
   const [joke, setJoke] = useState<Joke | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const signedInAs = useSyncExternalStore(auth.subscribe, auth.getEmail, auth.getServerEmail);
 
   const loadRandomJoke = useCallback(async () => {
     setLoading(true);
@@ -96,7 +98,12 @@ export default function Home() {
 
         <section className="flex flex-col gap-4">
           <h2 className="text-xl font-semibold text-black dark:text-zinc-50">Submit a joke</h2>
-          <JokeForm onCreated={loadRandomJoke} />
+          <SignIn />
+          {signedInAs ? (
+            <JokeForm onCreated={loadRandomJoke} />
+          ) : (
+            <p className="text-sm text-zinc-500">Sign in above to submit a joke.</p>
+          )}
         </section>
       </main>
     </div>

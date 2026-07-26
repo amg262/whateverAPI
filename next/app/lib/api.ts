@@ -46,11 +46,58 @@ export class ApiError extends Error {
   }
 }
 
+const TOKEN_KEY = "authToken";
+const EMAIL_KEY = "authEmail";
+
 function authHeaders(): HeadersInit {
   if (typeof window === "undefined") return {};
-  const token = window.localStorage.getItem("authToken");
+  const token = window.localStorage.getItem(TOKEN_KEY);
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
+
+const listeners = new Set<() => void>();
+let storageBound = false;
+
+function notify() {
+  for (const listener of listeners) listener();
+}
+
+export const auth = {
+  /** useSyncExternalStore subscribe — also picks up sign-in/out in other tabs. */
+  subscribe(listener: () => void) {
+    if (!storageBound && typeof window !== "undefined") {
+      window.addEventListener("storage", notify);
+      storageBound = true;
+    }
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  },
+
+  /** Email of the signed-in user, or null. Strings compare by value, so this is a stable snapshot. */
+  getEmail: () =>
+    typeof window === "undefined" ? null : window.localStorage.getItem(EMAIL_KEY),
+
+  /** Nothing is signed in during SSR — localStorage only exists in the browser. */
+  getServerEmail: () => null,
+
+  async signIn(email: string, name: string) {
+    const { token } = await request<{ email: string; token: string }>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, name }),
+    });
+    window.localStorage.setItem(TOKEN_KEY, token);
+    window.localStorage.setItem(EMAIL_KEY, email);
+    notify();
+  },
+
+  signOut() {
+    window.localStorage.removeItem(TOKEN_KEY);
+    window.localStorage.removeItem(EMAIL_KEY);
+    notify();
+  },
+};
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
