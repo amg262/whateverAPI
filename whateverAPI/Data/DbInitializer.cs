@@ -54,8 +54,8 @@ public static class DbInitializer
     /// - Temporary database unavailability
     /// - Connection timeouts
     /// </remarks>
-    public static async Task InitializeDatabaseRetryAsync(this WebApplication app, int maxRetryAttempts = 50,
-        int maxDelaySeconds = 30)
+    public static async Task InitializeDatabaseRetryAsync(this WebApplication app, int maxRetryAttempts = 8,
+        int maxDelaySeconds = 15)
     {
         var retryPolicy = Policy
             .Handle<Exception>()
@@ -75,14 +75,28 @@ public static class DbInitializer
                         timeSpan);
                 });
 
-        var scope = app.Services.CreateScope();
+        using var scope = app.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        await retryPolicy.ExecuteAsync(async () =>
+        try
         {
-            await context.Database.MigrateAsync();
-            await Seed(app, context);
-        });
+            await retryPolicy.ExecuteAsync(async () =>
+            {
+                await context.Database.MigrateAsync();
+                await Seed(app, context);
+            });
+        }
+        catch (Exception ex)
+        {
+            // Startup must not block on the database forever. If it does, Kestrel never
+            // binds, the host never answers a request, and the platform restarts us into
+            // the same wait - which reads as a hard outage rather than a degraded API.
+            // Start anyway and let individual requests surface the failure.
+            app.Logger.LogCritical(ex,
+                "Database initialization failed after {MaxRetries} attempts. Starting anyway - " +
+                "requests that need the database will fail until it is reachable",
+                maxRetryAttempts);
+        }
     }
 
     /// <summary>
